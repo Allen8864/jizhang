@@ -33,9 +33,9 @@ export function JoinRoomModal({
       return
     }
 
-    const code = roomCode.toUpperCase().trim()
-    if (code.length !== 6) {
-      setError('请输入6位房间号')
+    const code = roomCode.trim()
+    if (code.length !== 4 || !/^\d{4}$/.test(code)) {
+      setError('请输入4位数字房间号')
       return
     }
 
@@ -88,9 +88,9 @@ export function JoinRoomModal({
     }
   }
 
-  // Format room code as user types
+  // Format room code as user types (only allow digits)
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+    const value = e.target.value.replace(/\D/g, '').slice(0, 4)
     setRoomCode(value)
     setError('')
   }
@@ -99,12 +99,12 @@ export function JoinRoomModal({
     <Modal isOpen={isOpen} onClose={onClose} title="加入房间">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="房间号"
-          placeholder="输入6位房间号"
+          placeholder="输入4位数字房间号"
           value={roomCode}
           onChange={handleCodeChange}
           className="text-center text-2xl tracking-[0.3em] font-mono"
-          maxLength={6}
+          maxLength={4}
+          inputMode="numeric"
           autoFocus
         />
 
@@ -117,7 +117,7 @@ export function JoinRoomModal({
           className="w-full"
           size="lg"
           loading={loading}
-          disabled={roomCode.length !== 6}
+          disabled={roomCode.length !== 4}
         >
           加入
         </Button>

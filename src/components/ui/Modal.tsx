@@ -43,7 +43,7 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
       <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl animate-fade-in max-h-[85vh] overflow-auto">
         {/* Header with title and close button */}
         {title && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 pt-3 pb-1">
             <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
             <button
               onClick={onClose}

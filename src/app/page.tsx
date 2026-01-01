@@ -121,7 +121,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="pt-12 pb-6 text-center">
+      <header className="pt-12 pb-20 text-center">
         <h1 className="text-3xl font-bold text-gray-900">打牌记账</h1>
       </header>
 
@@ -141,7 +141,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setShowProfileEditor(true)}
-              className="absolute left-full ml-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors p-1.5 flex-shrink-0"
+              className="absolute left-full ml-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors p-2 flex-shrink-0"
               aria-label="编辑昵称"
             >
               <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">

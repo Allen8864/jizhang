@@ -120,14 +120,9 @@ export function parseToCents(input: string): number | null {
 }
 
 /**
- * Generate a random 6-character room code
- * Excludes confusing characters: 0/O, 1/I/l
+ * Generate a random 4-digit room code
  */
 export function generateRoomCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return code
+  const code = Math.floor(1000 + Math.random() * 9000)
+  return code.toString()
 }
