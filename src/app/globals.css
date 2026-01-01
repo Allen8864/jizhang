@@ -26,7 +26,8 @@ body {
 }
 
 /* Prevent bounce scroll on iOS */
-html, body {
+html,
+body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -40,16 +41,14 @@ html, body {
   padding-top: env(safe-area-inset-top, 0);
 }
 
-/* Larger tap targets for mobile */
-button, a, input, select, textarea {
-  min-height: 44px;
-}
+
 
 /* Animation for modal */
 @keyframes slide-up {
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -60,6 +59,7 @@ button, a, input, select, textarea {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);

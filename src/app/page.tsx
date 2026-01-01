@@ -127,25 +127,24 @@ export default function HomePage() {
 
       {/* Profile section */}
       <div className="flex-1 flex flex-col items-center px-6">
-        <div className="flex flex-col items-center gap-2 mb-12">
+        <div className="flex flex-col items-center gap-3 mb-12">
           {/* Avatar */}
           <div className="w-20 h-20 bg-white rounded-full shadow-sm flex items-center justify-center text-5xl border border-gray-100">
             {emoji}
           </div>
 
           {/* Nickname + Edit button */}
-          <div className="grid grid-cols-[32px_auto_32px] items-center gap-2">
-            <div />
-            <span className="text-lg font-medium text-gray-900 truncate max-w-[200px] text-center">
+          <div className="relative flex items-center justify-center">
+            <span className="text-lg font-medium text-gray-900">
               {nickname || '未设置昵称'}
             </span>
             <button
               type="button"
               onClick={() => setShowProfileEditor(true)}
-              className="inline-flex items-center justify-center rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-              style={{ width: 32, height: 32 }}
+              className="absolute left-full ml-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors p-1.5 flex-shrink-0"
+              aria-label="编辑昵称"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
