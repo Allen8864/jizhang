@@ -134,14 +134,16 @@ export default function HomePage() {
           </div>
 
           {/* Nickname + Edit button */}
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <div /> {/* Left spacer */}
-            <div className="text-lg font-medium text-gray-900 truncate max-w-[200px]">
+          <div className="grid grid-cols-[32px_auto_32px] items-center gap-2">
+            <div />
+            <span className="text-lg font-medium text-gray-900 truncate max-w-[200px] text-center">
               {nickname || '未设置昵称'}
-            </div>
+            </span>
             <button
+              type="button"
               onClick={() => setShowProfileEditor(true)}
-              className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+              className="inline-flex items-center justify-center rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+              style={{ width: 32, height: 32 }}
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
