@@ -89,10 +89,6 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
             </Button>
           )}
         </div>
-
-        <p className="text-xs text-gray-400 text-center">
-          好友扫码或输入房间号即可加入
-        </p>
       </div>
     </Modal>
   )

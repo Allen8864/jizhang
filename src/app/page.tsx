@@ -100,7 +100,7 @@ export default function HomePage() {
 
       if (playerError) throw playerError
 
-      router.push(`/room/${code}`)
+      router.push(`/room/${code}?created=1`)
     } catch (err) {
       console.error('Create room error:', err)
       alert('创建房间失败，请重试')

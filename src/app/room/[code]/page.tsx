@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useRoom } from '@/hooks/useRoom'
 import { useSupabase } from '@/hooks/useSupabase'
 import { RoomHeader } from '@/components/room/RoomHeader'
@@ -9,6 +9,7 @@ import { PlayerList } from '@/components/room/PlayerList'
 import { TransactionList } from '@/components/room/TransactionList'
 import { TransactionForm } from '@/components/room/TransactionForm'
 import { SettlementView } from '@/components/room/SettlementView'
+import { ShareModal } from '@/components/room/ShareModal'
 import { ActionBar } from '@/components/room/ActionBar'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -25,7 +26,9 @@ function getRandomAvatarColor(): string {
 export default function RoomPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const roomCode = (params.code as string).toUpperCase()
+  const isNewlyCreated = searchParams.get('created') === '1'
 
   const { user, supabase, loading: authLoading } = useSupabase()
   const {
@@ -44,6 +47,7 @@ export default function RoomPage() {
 
   const [showTransactionForm, setShowTransactionForm] = useState(false)
   const [showSettlement, setShowSettlement] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
   const [nickname, setNickname] = useState('')
   const [joining, setJoining] = useState(false)
@@ -65,6 +69,15 @@ export default function RoomPage() {
       setShowJoinForm(true)
     }
   }, [loading, room, currentPlayer, user])
+
+  // Show share modal if room was just created
+  useEffect(() => {
+    if (isNewlyCreated && room && !loading) {
+      setShowShareModal(true)
+      // Remove the query param from URL without refresh
+      router.replace(`/room/${roomCode}`, { scroll: false })
+    }
+  }, [isNewlyCreated, room, loading, router, roomCode])
 
   // Get current active round
   const currentRound = useMemo(() => {
@@ -274,6 +287,13 @@ export default function RoomPage() {
         onClose={() => setShowSettlement(false)}
         players={players}
         transactions={transactions}
+      />
+
+      {/* Share modal (shown after creating room) */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        room={room}
       />
     </div>
   )
