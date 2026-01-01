@@ -1,65 +1,216 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/Button'
+import { ProfileEditor } from '@/components/home/ProfileEditor'
+import { JoinRoomModal } from '@/components/home/JoinRoomModal'
+import { HistoryModal } from '@/components/home/HistoryModal'
+import { useSupabase } from '@/hooks/useSupabase'
+import { useRoomHistory } from '@/hooks/useRoom'
+import { generateRoomCode } from '@/lib/settlement'
+
+export default function HomePage() {
+  const router = useRouter()
+  const { user, supabase, loading: authLoading } = useSupabase()
+  const { history, clearHistory } = useRoomHistory()
+
+  const [emoji, setEmoji] = useState('😀')
+  const [nickname, setNickname] = useState('')
+  const [showProfileEditor, setShowProfileEditor] = useState(false)
+  const [showJoinRoom, setShowJoinRoom] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [creating, setCreating] = useState(false)
+
+  // Load saved profile
+  useEffect(() => {
+    try {
+      const savedEmoji = localStorage.getItem('jizhang_emoji')
+      const savedNickname = localStorage.getItem('jizhang_nickname')
+      if (savedEmoji) setEmoji(savedEmoji)
+      if (savedNickname) setNickname(savedNickname)
+    } catch (e) {
+      // Ignore
+    }
+  }, [])
+
+  // Save profile
+  const handleSaveProfile = (newEmoji: string, newNickname: string) => {
+    setEmoji(newEmoji)
+    setNickname(newNickname)
+    try {
+      localStorage.setItem('jizhang_emoji', newEmoji)
+      localStorage.setItem('jizhang_nickname', newNickname)
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  // Create room
+  const handleCreateRoom = async () => {
+    if (!user) return
+
+    // Check if nickname is set
+    if (!nickname.trim()) {
+      setShowProfileEditor(true)
+      return
+    }
+
+    setCreating(true)
+
+    try {
+      // Generate unique room code
+      let code = generateRoomCode()
+      let attempts = 0
+
+      while (attempts < 5) {
+        const { data: existing } = await supabase
+          .from('rooms')
+          .select('id')
+          .eq('code', code)
+          .single()
+
+        if (!existing) break
+        code = generateRoomCode()
+        attempts++
+      }
+
+      // Create room
+      const { data: room, error: roomError } = await supabase
+        .from('rooms')
+        .insert({
+          code,
+          name: '新房间',
+          created_by_user_id: user.id,
+        })
+        .select()
+        .single()
+
+      if (roomError) throw roomError
+
+      // Create player record
+      const { error: playerError } = await supabase
+        .from('players')
+        .insert({
+          room_id: room.id,
+          user_id: user.id,
+          name: nickname,
+          avatar_color: emoji,
+        })
+
+      if (playerError) throw playerError
+
+      router.push(`/room/${code}`)
+    } catch (err) {
+      console.error('Create room error:', err)
+      alert('创建房间失败，请重试')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // Handle join room click
+  const handleJoinRoom = () => {
+    if (!nickname.trim()) {
+      setShowProfileEditor(true)
+      return
+    }
+    setShowJoinRoom(true)
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="pt-12 pb-6 text-center">
+        <h1 className="text-3xl font-bold text-gray-900">打牌记账</h1>
+      </header>
+
+      {/* Profile section */}
+      <div className="flex-1 flex flex-col items-center px-6">
+        <div className="flex flex-col items-center gap-2 mb-12">
+          {/* Avatar */}
+          <div className="w-20 h-20 bg-white rounded-full shadow-sm flex items-center justify-center text-5xl border border-gray-100">
+            {emoji}
+          </div>
+
+          {/* Nickname + Edit button */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div /> {/* Left spacer */}
+            <div className="text-lg font-medium text-gray-900 truncate max-w-[200px]">
+              {nickname || '未设置昵称'}
+            </div>
+            <button
+              onClick={() => setShowProfileEditor(true)}
+              className="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Action buttons */}
+        <div className="w-full max-w-xs space-y-3">
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={handleCreateRoom}
+            loading={creating}
+            disabled={authLoading}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            创建房间
+          </Button>
+
+          <Button
+            variant="secondary"
+            className="w-full"
+            size="lg"
+            onClick={handleJoinRoom}
+            disabled={authLoading}
           >
-            Documentation
-          </a>
+            加入房间
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full"
+            size="lg"
+            onClick={() => setShowHistory(true)}
+          >
+            历史记录
+          </Button>
         </div>
-      </main>
+      </div>
+
+      {/* Footer */}
+      <footer className="py-6 text-center text-xs text-gray-400">
+        无需注册，即开即用
+      </footer>
+
+      {/* Modals */}
+      <ProfileEditor
+        isOpen={showProfileEditor}
+        onClose={() => setShowProfileEditor(false)}
+        emoji={emoji}
+        nickname={nickname}
+        onSave={handleSaveProfile}
+      />
+
+      <JoinRoomModal
+        isOpen={showJoinRoom}
+        onClose={() => setShowJoinRoom(false)}
+        nickname={nickname}
+        emoji={emoji}
+      />
+
+      <HistoryModal
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        history={history}
+        onClear={clearHistory}
+      />
     </div>
-  );
+  )
 }
