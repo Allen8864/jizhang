@@ -207,8 +207,7 @@ export function useRoom(roomCode: string) {
   const addTransaction = useCallback(async (
     fromPlayerId: string,
     toPlayerId: string,
-    amount: number,
-    note?: string
+    amount: number
   ) => {
     if (!state.room || !user) throw new Error('未加入房间')
 
@@ -219,7 +218,6 @@ export function useRoom(roomCode: string) {
       from_player_id: fromPlayerId,
       to_player_id: toPlayerId,
       amount,
-      note: note || null,
       round_id: currentRound?.id || null,
       created_by_user_id: user.id,
     })

@@ -32,7 +32,6 @@ export interface Transaction {
   from_player_id: string
   to_player_id: string
   amount: number // in cents
-  note: string | null
   round_id: string | null
   created_at: string
   created_by_user_id: string

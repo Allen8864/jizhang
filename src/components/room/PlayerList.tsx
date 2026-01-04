@@ -11,9 +11,10 @@ interface PlayerListProps {
   currentPlayerId: string | null
   onAddFriend?: () => void
   onEditProfile?: () => void
+  onPlayerClick?: (player: Player) => void
 }
 
-export function PlayerList({ players, transactions, currentPlayerId, onAddFriend, onEditProfile }: PlayerListProps) {
+export function PlayerList({ players, transactions, currentPlayerId, onAddFriend, onEditProfile, onPlayerClick }: PlayerListProps) {
   const balances = useMemo(() => {
     return calculateBalances(players, transactions)
   }, [players, transactions])
@@ -42,11 +43,10 @@ export function PlayerList({ players, transactions, currentPlayerId, onAddFriend
             return (
               <button
                 key={player.id}
-                onClick={isCurrentPlayer ? onEditProfile : undefined}
-                disabled={!isCurrentPlayer}
+                onClick={isCurrentPlayer ? onEditProfile : () => onPlayerClick?.(player)}
                 className={`flex flex-col items-center flex-shrink-0 min-w-[72px] ${
-                  isCurrentPlayer ? 'relative cursor-pointer' : 'cursor-default'
-                }`}
+                  isCurrentPlayer ? 'relative' : ''
+                } cursor-pointer`}
               >
                 <div className={`relative ${isCurrentPlayer ? 'ring-2 ring-emerald-500 ring-offset-2 rounded-full' : ''}`}>
                   <Avatar

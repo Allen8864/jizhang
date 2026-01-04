@@ -14,7 +14,7 @@ import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { getRandomNickname, getRandomEmoji } from '@/types'
+import { getRandomNickname, getRandomEmoji, type Player } from '@/types'
 
 export default function RoomPage() {
   const params = useParams()
@@ -39,6 +39,7 @@ export default function RoomPage() {
   } = useRoom(roomCode)
 
   const [showTransactionForm, setShowTransactionForm] = useState(false)
+  const [targetPlayer, setTargetPlayer] = useState<Player | null>(null)
   const [showSettlement, setShowSettlement] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
@@ -137,10 +138,9 @@ export default function RoomPage() {
   const handleAddTransaction = useCallback(async (
     fromId: string,
     toId: string,
-    amount: number,
-    note?: string
+    amount: number
   ) => {
-    await addTransaction(fromId, toId, amount, note)
+    await addTransaction(fromId, toId, amount)
   }, [addTransaction])
 
   // Handle delete transaction
@@ -268,6 +268,10 @@ export default function RoomPage() {
           currentPlayerId={currentPlayer?.id || null}
           onAddFriend={() => setShowShareModal(true)}
           onEditProfile={() => setShowProfileEditor(true)}
+          onPlayerClick={(player) => {
+            setTargetPlayer(player)
+            setShowTransactionForm(true)
+          }}
         />
 
         {/* Tabs */}
@@ -312,7 +316,6 @@ export default function RoomPage() {
 
       {/* Action bar */}
       <ActionBar
-        onAddTransaction={() => setShowTransactionForm(true)}
         onSettlement={() => setShowSettlement(true)}
         onNewRound={handleNewRound}
         currentRound={currentRound}
@@ -322,9 +325,12 @@ export default function RoomPage() {
       {/* Transaction form modal */}
       <TransactionForm
         isOpen={showTransactionForm}
-        onClose={() => setShowTransactionForm(false)}
-        players={players}
-        currentPlayerId={currentPlayer?.id || null}
+        onClose={() => {
+          setShowTransactionForm(false)
+          setTargetPlayer(null)
+        }}
+        fromPlayer={currentPlayer || null}
+        toPlayer={targetPlayer}
         onSubmit={handleAddTransaction}
       />
 

@@ -139,12 +139,7 @@ export function TransactionList({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-1">
-                    {tx.note ? (
-                      <span className="text-xs text-gray-500">{tx.note}</span>
-                    ) : (
-                      <span />
-                    )}
+                  <div className="flex items-center justify-end mt-1">
                     <span className="text-xs text-gray-400">{formatTime(tx.created_at)}</span>
                   </div>
                 </div>

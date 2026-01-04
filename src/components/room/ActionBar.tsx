@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button'
 import type { Round } from '@/types'
 
 interface ActionBarProps {
-  onAddTransaction: () => void
   onSettlement: () => void
   onNewRound: () => void
   currentRound: Round | null
@@ -12,7 +11,6 @@ interface ActionBarProps {
 }
 
 export function ActionBar({
-  onAddTransaction,
   onSettlement,
   onNewRound,
   currentRound,
@@ -26,28 +24,16 @@ export function ActionBar({
           variant="ghost"
           size="md"
           onClick={onNewRound}
-          className="text-gray-500"
+          className="flex-1 text-gray-500"
         >
           {currentRound ? `第${currentRound.index}轮` : '新一轮'}
         </Button>
 
-        {/* Add Transaction - Primary Action */}
+        {/* Settlement Button */}
         <Button
           variant="primary"
           size="lg"
           className="flex-1"
-          onClick={onAddTransaction}
-        >
-          <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          记一笔
-        </Button>
-
-        {/* Settlement Button */}
-        <Button
-          variant="secondary"
-          size="md"
           onClick={onSettlement}
           disabled={transactionCount === 0}
         >
