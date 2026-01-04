@@ -11,6 +11,7 @@ import { TransactionForm } from '@/components/room/TransactionForm'
 import { SettlementView } from '@/components/room/SettlementView'
 import { ShareModal } from '@/components/room/ShareModal'
 import { ActionBar } from '@/components/room/ActionBar'
+import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
@@ -49,6 +50,7 @@ export default function RoomPage() {
   const [showSettlement, setShowSettlement] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
+  const [showProfileEditor, setShowProfileEditor] = useState(false)
   const [nickname, setNickname] = useState('')
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
@@ -163,12 +165,33 @@ export default function RoomPage() {
     }
   }, [startNewRound])
 
+  // Handle profile update
+  const handleProfileSave = useCallback(async (emoji: string, newNickname: string) => {
+    if (!currentPlayer) return
+
+    try {
+      await supabase
+        .from('players')
+        .update({ avatar_color: emoji, name: newNickname })
+        .eq('id', currentPlayer.id)
+
+      // Save nickname preference
+      try {
+        localStorage.setItem('jizhang_nickname', newNickname)
+      } catch (e) {
+        // Ignore
+      }
+    } catch (err) {
+      console.error('Profile update error:', err)
+    }
+  }, [currentPlayer, supabase])
+
   // Loading state
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4" />
+          <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-gray-500">加载中...</p>
         </div>
       </div>
@@ -238,7 +261,7 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <RoomHeader room={room} isConnected={isConnected} />
+      <RoomHeader room={room} isConnected={isConnected} playerCount={players.length} />
 
       <main className="px-4 py-4 max-w-md mx-auto space-y-4">
         {/* Player list */}
@@ -246,6 +269,8 @@ export default function RoomPage() {
           players={players}
           transactions={transactions}
           currentPlayerId={currentPlayer?.id || null}
+          onAddFriend={() => setShowShareModal(true)}
+          onEditProfile={() => setShowProfileEditor(true)}
         />
 
         {/* Transaction list */}
@@ -295,6 +320,17 @@ export default function RoomPage() {
         onClose={() => setShowShareModal(false)}
         room={room}
       />
+
+      {/* Profile editor modal */}
+      {currentPlayer && (
+        <ProfileEditor
+          isOpen={showProfileEditor}
+          onClose={() => setShowProfileEditor(false)}
+          emoji={currentPlayer.avatar_color}
+          nickname={currentPlayer.name}
+          onSave={handleProfileSave}
+        />
+      )}
     </div>
   )
 }
