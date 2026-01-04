@@ -34,7 +34,6 @@ export default function RoomPage() {
     error,
     isConnected,
     addTransaction,
-    deleteTransaction,
     startNewRound,
   } = useRoom(roomCode)
 
@@ -142,16 +141,6 @@ export default function RoomPage() {
   ) => {
     await addTransaction(fromId, toId, amount)
   }, [addTransaction])
-
-  // Handle delete transaction
-  const handleDeleteTransaction = useCallback(async (id: string) => {
-    try {
-      await deleteTransaction(id)
-    } catch (err) {
-      console.error('Delete error:', err)
-      // Could show toast here
-    }
-  }, [deleteTransaction])
 
   // Handle new round
   const handleNewRound = useCallback(async () => {
@@ -294,7 +283,7 @@ export default function RoomPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            记录 {transactions.length > 0 && <span className="text-gray-400">({transactions.length})</span>}
+            记录
           </button>
         </div>
 
@@ -308,8 +297,6 @@ export default function RoomPage() {
             transactions={transactions}
             players={players}
             rounds={rounds}
-            currentUserId={user?.id || null}
-            onDelete={handleDeleteTransaction}
           />
         )}
       </main>

@@ -45,7 +45,7 @@ export function TransactionForm({
 
     const cents = parseToCents(amount)
     if (!cents) {
-      setError('请输入有效金额')
+      setError('请输入有效分数')
       return
     }
 
@@ -108,7 +108,7 @@ export function TransactionForm({
             pattern="[0-9]*"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-            placeholder="输入金额"
+            placeholder="输入分数"
             className="w-full px-4 py-3 text-center border border-gray-300 rounded-lg
               focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             autoFocus
