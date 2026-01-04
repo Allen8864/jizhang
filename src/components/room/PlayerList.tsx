@@ -50,8 +50,7 @@ export function PlayerList({ players, transactions, currentPlayerId, onAddFriend
               >
                 <div className={`relative ${isCurrentPlayer ? 'ring-2 ring-emerald-500 ring-offset-2 rounded-full' : ''}`}>
                   <Avatar
-                    name={player.name}
-                    color={player.avatar_color}
+                    emoji={player.avatar_emoji}
                     size="lg"
                   />
                 </div>

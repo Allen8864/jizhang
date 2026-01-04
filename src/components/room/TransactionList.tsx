@@ -109,20 +109,14 @@ export function TransactionList({
                 <div key={tx.id} className="px-4 py-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm">
-                      <span
-                        className="font-medium"
-                        style={{ color: fromPlayer?.avatar_color || '#6366f1' }}
-                      >
-                        {fromPlayer?.name || '未知'}
+                      <span className="font-medium text-gray-900">
+                        {fromPlayer?.avatar_emoji} {fromPlayer?.name || '未知'}
                       </span>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
-                      <span
-                        className="font-medium"
-                        style={{ color: toPlayer?.avatar_color || '#22c55e' }}
-                      >
-                        {toPlayer?.name || '未知'}
+                      <span className="font-medium text-gray-900">
+                        {toPlayer?.avatar_emoji} {toPlayer?.name || '未知'}
                       </span>
                     </div>
 

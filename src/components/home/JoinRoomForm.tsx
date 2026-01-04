@@ -5,15 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useSupabase } from '@/hooks/useSupabase'
-
-const AVATAR_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-  '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
-]
-
-function getRandomAvatarColor(): string {
-  return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
-}
+import { getRandomEmoji } from '@/types'
 
 export function JoinRoomForm() {
   const router = useRouter()
@@ -82,7 +74,7 @@ export function JoinRoomForm() {
             room_id: room.id,
             user_id: user.id,
             name: nickname.trim(),
-            avatar_color: getRandomAvatarColor(),
+            avatar_emoji: getRandomEmoji(),
           })
 
         if (playerError) {

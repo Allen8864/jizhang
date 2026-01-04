@@ -70,7 +70,7 @@ export function JoinRoomModal({
             room_id: room.id,
             user_id: user.id,
             name: nickname,
-            avatar_color: emoji, // Store emoji as avatar_color for now
+            avatar_emoji: emoji,
           })
 
         if (playerError && playerError.code !== '23505') {

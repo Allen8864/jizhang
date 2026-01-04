@@ -14,15 +14,7 @@ import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-
-const AVATAR_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-  '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6',
-]
-
-function getRandomAvatarColor(): string {
-  return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
-}
+import { getRandomNickname, getRandomEmoji } from '@/types'
 
 export default function RoomPage() {
   const params = useParams()
@@ -56,13 +48,17 @@ export default function RoomPage() {
   const [joinError, setJoinError] = useState('')
   const [activeTab, setActiveTab] = useState<'game' | 'history'>('game')
 
-  // Load saved nickname
+  // Load saved nickname or generate random one
   useEffect(() => {
     try {
       const saved = localStorage.getItem('jizhang_nickname')
-      if (saved) setNickname(saved)
+      if (saved) {
+        setNickname(saved)
+      } else {
+        setNickname(getRandomNickname())
+      }
     } catch (e) {
-      // Ignore
+      setNickname(getRandomNickname())
     }
   }, [])
 
@@ -107,7 +103,7 @@ export default function RoomPage() {
           room_id: room.id,
           user_id: user.id,
           name: nickname.trim(),
-          avatar_color: getRandomAvatarColor(),
+          avatar_emoji: getRandomEmoji(),
         })
 
       if (playerError) {
@@ -173,7 +169,7 @@ export default function RoomPage() {
     try {
       await supabase
         .from('players')
-        .update({ avatar_color: emoji, name: newNickname })
+        .update({ avatar_emoji: emoji, name: newNickname })
         .eq('id', currentPlayer.id)
 
       // Save nickname preference
@@ -352,7 +348,7 @@ export default function RoomPage() {
         <ProfileEditor
           isOpen={showProfileEditor}
           onClose={() => setShowProfileEditor(false)}
-          emoji={currentPlayer.avatar_color}
+          emoji={currentPlayer.avatar_emoji}
           nickname={currentPlayer.name}
           onSave={handleProfileSave}
         />

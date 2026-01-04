@@ -50,10 +50,7 @@ export function SettlementView({
                   className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: player?.avatar_color || '#6366f1' }}
-                    />
+                    <span>{player?.avatar_emoji}</span>
                     <span className="font-medium text-gray-900">{bal.playerName}</span>
                   </div>
                   <span className={`font-mono font-semibold ${
@@ -88,20 +85,14 @@ export function SettlementView({
                     className="flex items-center justify-between py-3 px-4 bg-white border border-gray-200 rounded-lg"
                   >
                     <div className="flex items-center gap-2 text-sm">
-                      <span
-                        className="font-medium"
-                        style={{ color: fromPlayer?.avatar_color || '#ef4444' }}
-                      >
-                        {transfer.from.name}
+                      <span className="font-medium text-gray-900">
+                        {fromPlayer?.avatar_emoji} {transfer.from.name}
                       </span>
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                       </svg>
-                      <span
-                        className="font-medium"
-                        style={{ color: toPlayer?.avatar_color || '#22c55e' }}
-                      >
-                        {transfer.to.name}
+                      <span className="font-medium text-gray-900">
+                        {toPlayer?.avatar_emoji} {transfer.to.name}
                       </span>
                     </div>
                     <span className="font-mono font-bold text-lg text-gray-900">

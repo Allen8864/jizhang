@@ -9,6 +9,7 @@ import { HistoryModal } from '@/components/home/HistoryModal'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useRoomHistory } from '@/hooks/useRoom'
 import { generateRoomCode } from '@/lib/settlement'
+import { getRandomNickname, getRandomEmoji } from '@/types'
 
 export default function HomePage() {
   const router = useRouter()
@@ -22,15 +23,24 @@ export default function HomePage() {
   const [showHistory, setShowHistory] = useState(false)
   const [creating, setCreating] = useState(false)
 
-  // Load saved profile
+  // Load saved profile or generate random
   useEffect(() => {
     try {
       const savedEmoji = localStorage.getItem('jizhang_emoji')
       const savedNickname = localStorage.getItem('jizhang_nickname')
-      if (savedEmoji) setEmoji(savedEmoji)
-      if (savedNickname) setNickname(savedNickname)
+      if (savedEmoji) {
+        setEmoji(savedEmoji)
+      } else {
+        setEmoji(getRandomEmoji())
+      }
+      if (savedNickname) {
+        setNickname(savedNickname)
+      } else {
+        setNickname(getRandomNickname())
+      }
     } catch (e) {
-      // Ignore
+      setEmoji(getRandomEmoji())
+      setNickname(getRandomNickname())
     }
   }, [])
 
@@ -94,7 +104,7 @@ export default function HomePage() {
           room_id: room.id,
           user_id: user.id,
           name: nickname,
-          avatar_color: emoji,
+          avatar_emoji: emoji,
         })
 
       if (playerError) throw playerError

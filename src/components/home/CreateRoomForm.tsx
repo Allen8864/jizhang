@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useSupabase } from '@/hooks/useSupabase'
 import { generateRoomCode } from '@/lib/settlement'
-import { getRandomAvatarColor } from '@/types'
+import { getRandomEmoji } from '@/types'
 
 export function CreateRoomForm() {
   const router = useRouter()
@@ -67,7 +67,7 @@ export function CreateRoomForm() {
           room_id: room.id,
           user_id: user.id,
           name: nickname.trim(),
-          avatar_color: getRandomAvatarColor(),
+          avatar_emoji: getRandomEmoji(),
         })
 
       if (playerError) throw playerError
