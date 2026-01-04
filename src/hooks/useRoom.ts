@@ -293,7 +293,6 @@ function saveRoomToHistory(room: Room, player: Player) {
     const entry: RoomHistory = {
       id: room.id,
       code: room.code,
-      name: room.name,
       playerName: player.name,
       lastVisited: new Date().toISOString(),
     }

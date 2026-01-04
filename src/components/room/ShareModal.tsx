@@ -36,7 +36,7 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `加入${room.name}`,
+          title: `加入房间`,
           text: `房间号: ${room.code}`,
           url: shareUrl,
         })

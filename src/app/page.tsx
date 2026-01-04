@@ -80,7 +80,6 @@ export default function HomePage() {
         .from('rooms')
         .insert({
           code,
-          name: '新房间',
           created_by_user_id: user.id,
         })
         .select()

@@ -54,6 +54,7 @@ export default function RoomPage() {
   const [nickname, setNickname] = useState('')
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState('')
+  const [activeTab, setActiveTab] = useState<'game' | 'history'>('game')
 
   // Load saved nickname
   useEffect(() => {
@@ -224,7 +225,7 @@ export default function RoomPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-1">加入房间</h2>
-          <p className="text-gray-500 mb-6">{room.name}</p>
+          <p className="text-gray-500 mb-6">房间号: {room.code}</p>
 
           <form onSubmit={handleJoin} className="space-y-4">
             <Input
@@ -273,11 +274,36 @@ export default function RoomPage() {
           onEditProfile={() => setShowProfileEditor(true)}
         />
 
-        {/* Transaction list */}
-        <div>
-          <h2 className="font-medium text-gray-900 mb-3">
-            记录 <span className="text-gray-400 font-normal">({transactions.length}笔)</span>
-          </h2>
+        {/* Tabs */}
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('game')}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'game'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            牌局
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'history'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            记录 {transactions.length > 0 && <span className="text-gray-400">({transactions.length})</span>}
+          </button>
+        </div>
+
+        {/* Tab content */}
+        {activeTab === 'game' ? (
+          <div className="text-center text-gray-400 py-8">
+            牌局内容
+          </div>
+        ) : (
           <TransactionList
             transactions={transactions}
             players={players}
@@ -285,7 +311,7 @@ export default function RoomPage() {
             currentUserId={user?.id || null}
             onDelete={handleDeleteTransaction}
           />
-        </div>
+        )}
       </main>
 
       {/* Action bar */}

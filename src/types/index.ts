@@ -3,7 +3,6 @@
 export interface Room {
   id: string
   code: string
-  name: string
   created_by_user_id: string
   created_at: string
   updated_at: string
@@ -56,7 +55,6 @@ export interface SettlementTransfer {
 export interface RoomHistory {
   id: string
   code: string
-  name: string
   playerName?: string
   lastVisited: string
 }

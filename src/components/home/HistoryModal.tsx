@@ -55,10 +55,7 @@ export function HistoryModal({
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div>
-                  <div className="font-medium text-gray-900">{room.name}</div>
-                  <div className="text-sm text-gray-500">
-                    <span className="font-mono">{room.code}</span>
-                  </div>
+                  <div className="font-medium text-gray-900 font-mono">{room.code}</div>
                 </div>
                 <div className="text-xs text-gray-400">
                   {formatTime(room.lastVisited)}

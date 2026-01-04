@@ -11,7 +11,6 @@ import { getRandomAvatarColor } from '@/types'
 export function CreateRoomForm() {
   const router = useRouter()
   const { user, supabase, loading: authLoading } = useSupabase()
-  const [roomName, setRoomName] = useState('')
   const [nickname, setNickname] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -54,7 +53,6 @@ export function CreateRoomForm() {
         .from('rooms')
         .insert({
           code,
-          name: roomName.trim() || '新房间',
           created_by_user_id: user.id,
         })
         .select()
@@ -103,14 +101,6 @@ export function CreateRoomForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        label="房间名称（可选）"
-        placeholder="例如：周五麻将局"
-        value={roomName}
-        onChange={(e) => setRoomName(e.target.value)}
-        maxLength={50}
-      />
-
       <Input
         label="你的昵称"
         placeholder="输入你的昵称"

@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useRoomHistory } from '@/hooks/useRoom'
-import { Button } from '@/components/ui/Button'
 
 export function RecentRooms() {
   const { history, clearHistory } = useRoomHistory()
@@ -47,11 +46,10 @@ export function RecentRooms() {
             className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div>
-              <div className="font-medium text-gray-900">{room.name}</div>
-              <div className="text-sm text-gray-500">
-                {room.playerName && <span>{room.playerName} · </span>}
-                <span className="font-mono">{room.code}</span>
-              </div>
+              <div className="font-medium text-gray-900 font-mono">{room.code}</div>
+              {room.playerName && (
+                <div className="text-sm text-gray-500">{room.playerName}</div>
+              )}
             </div>
             <div className="text-xs text-gray-400">
               {formatTime(room.lastVisited)}
