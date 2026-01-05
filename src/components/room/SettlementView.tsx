@@ -1,15 +1,19 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
+import { Button } from '@/components/ui/Button'
 import { calculateBalances, calculateSettlement, formatAmount } from '@/lib/settlement'
-import type { Profile, Transaction } from '@/types'
+import { useSupabase } from '@/hooks/useSupabase'
+import type { Profile, Transaction, Room, PlayerResult } from '@/types'
 
 interface SettlementViewProps {
   isOpen: boolean
   onClose: () => void
   players: Profile[]
   transactions: Transaction[]
+  room: Room | null
 }
 
 export function SettlementView({
@@ -17,7 +21,13 @@ export function SettlementView({
   onClose,
   players,
   transactions,
+  room,
 }: SettlementViewProps) {
+  const router = useRouter()
+  const { user, supabase } = useSupabase()
+  const [settling, setSettling] = useState(false)
+  const [error, setError] = useState('')
+
   const balances = useMemo(() => {
     return calculateBalances(players, transactions)
   }, [players, transactions])
@@ -34,6 +44,68 @@ export function SettlementView({
   const playerMap = useMemo(() => {
     return new Map(players.map(p => [p.user_id, p]))
   }, [players])
+
+  // Handle final settlement - save history and delete room
+  const handleSettle = async () => {
+    if (!room || !user) return
+
+    setSettling(true)
+    setError('')
+
+    try {
+      // Create player results snapshot
+      const playerResults: PlayerResult[] = players.map(p => {
+        const balance = balances.find(b => b.userId === p.user_id)?.balance || 0
+        return {
+          name: p.name,
+          emoji: p.avatar_emoji,
+          balance,
+        }
+      })
+
+      // Create history record for current user
+      const { error: historyError } = await supabase
+        .from('settlement_history')
+        .insert({
+          user_id: user.id,
+          room_id: room.id,
+          room_code: room.code,
+          player_results: playerResults,
+        })
+
+      if (historyError) {
+        throw historyError
+      }
+
+      // Clear current_room_id for all players in this room
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ current_room_id: null })
+        .eq('current_room_id', room.id)
+
+      if (updateError) {
+        console.error('Failed to clear players from room:', updateError)
+      }
+
+      // Delete the room (releases the room code)
+      const { error: deleteError } = await supabase
+        .from('rooms')
+        .delete()
+        .eq('id', room.id)
+
+      if (deleteError) {
+        console.error('Failed to delete room:', deleteError)
+      }
+
+      // Navigate to home
+      router.push('/')
+    } catch (err) {
+      console.error('Settlement error:', err)
+      setError(err instanceof Error ? err.message : '结算失败')
+    } finally {
+      setSettling(false)
+    }
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="结算">
@@ -115,6 +187,25 @@ export function SettlementView({
 
         <p className="text-xs text-gray-400 text-center">
           以上为最少转账次数的结算方案
+        </p>
+
+        {error && (
+          <p className="text-red-500 text-sm text-center">{error}</p>
+        )}
+
+        {/* Settle button */}
+        <Button
+          variant="primary"
+          size="lg"
+          className="w-full"
+          onClick={handleSettle}
+          loading={settling}
+        >
+          确认结算并关闭房间
+        </Button>
+
+        <p className="text-xs text-gray-400 text-center">
+          结算后房间将关闭，记录会保存到历史
         </p>
       </div>
     </Modal>

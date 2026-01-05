@@ -5,22 +5,18 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { JoinRoomModal } from '@/components/home/JoinRoomModal'
-import { HistoryModal } from '@/components/home/HistoryModal'
 import { useSupabase } from '@/hooks/useSupabase'
-import { useRoomHistory } from '@/hooks/useRoom'
 import { generateRoomCode } from '@/lib/settlement'
 import { getRandomNickname, getRandomEmoji } from '@/types'
 
 export default function HomePage() {
   const router = useRouter()
   const { user, supabase, loading: authLoading } = useSupabase()
-  const { history, clearHistory } = useRoomHistory()
 
   const [emoji, setEmoji] = useState('😀')
   const [nickname, setNickname] = useState('')
   const [showProfileEditor, setShowProfileEditor] = useState(false)
   const [showJoinRoom, setShowJoinRoom] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
   const [creating, setCreating] = useState(false)
 
   // Load saved profile or generate random
@@ -191,7 +187,7 @@ export default function HomePage() {
             variant="ghost"
             className="w-full"
             size="lg"
-            onClick={() => setShowHistory(true)}
+            onClick={() => router.push('/history')}
           >
             历史记录
           </Button>
@@ -217,13 +213,6 @@ export default function HomePage() {
         onClose={() => setShowJoinRoom(false)}
         nickname={nickname}
         emoji={emoji}
-      />
-
-      <HistoryModal
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        history={history}
-        onClear={clearHistory}
       />
     </div>
   )

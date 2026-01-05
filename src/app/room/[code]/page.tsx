@@ -323,6 +323,7 @@ export default function RoomPage() {
         onClose={() => setShowSettlement(false)}
         players={players}
         transactions={transactions}
+        room={room}
       />
 
       {/* Share modal (shown after creating room) */}
