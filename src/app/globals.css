@@ -25,11 +25,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Prevent bounce scroll on iOS */
+/* Prevent bounce scroll on iOS and WebView browsers (WeChat, etc.) */
 html,
 body {
   overscroll-behavior: none;
+  overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
+  /* Prevent pull-to-refresh in WebView */
+  touch-action: pan-x pan-y;
 }
 
 /* Safe area padding utilities */

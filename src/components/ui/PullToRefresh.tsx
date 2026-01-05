@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, type ReactNode } from 'react'
+import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
@@ -17,6 +17,24 @@ export function PullToRefresh({ onRefresh, children, className = '' }: PullToRef
   const containerRef = useRef<HTMLDivElement>(null)
   const startYRef = useRef(0)
   const isPullingRef = useRef(false)
+
+  // Prevent browser's native pull-to-refresh when at top
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const preventNativePullToRefresh = (e: TouchEvent) => {
+      // Only prevent when we're pulling down at the top
+      if (isPullingRef.current && pullDistance > 0) {
+        e.preventDefault()
+      }
+    }
+
+    container.addEventListener('touchmove', preventNativePullToRefresh, { passive: false })
+    return () => {
+      container.removeEventListener('touchmove', preventNativePullToRefresh)
+    }
+  }, [pullDistance])
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (isRefreshing) return
