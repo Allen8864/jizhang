@@ -1,5 +1,5 @@
 -- 记账 (Jizhang) - Card Game/Mahjong Accounting System
--- Initial Database Schema with RLS Policies
+-- Complete Database Schema
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -11,25 +11,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Rooms table
 CREATE TABLE rooms (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    code VARCHAR(6) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL DEFAULT '新房间',
+    code VARCHAR(4) UNIQUE NOT NULL,
     created_by_user_id UUID NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Players table (room membership)
-CREATE TABLE players (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
+-- Profiles table (one user can only be in one room at a time)
+CREATE TABLE profiles (
+    user_id UUID PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    avatar_color VARCHAR(7) DEFAULT '#6366f1',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-
-    -- Each user can only join a room once
-    UNIQUE(room_id, user_id)
+    avatar_emoji VARCHAR(10) DEFAULT '😀',
+    current_room_id UUID REFERENCES rooms(id) ON DELETE SET NULL,
+    joined_room_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Rounds table
@@ -48,16 +43,14 @@ CREATE TABLE rounds (
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    from_player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-    to_player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    from_user_id UUID NOT NULL REFERENCES profiles(user_id),
+    to_user_id UUID NOT NULL REFERENCES profiles(user_id),
     amount INTEGER NOT NULL CHECK (amount > 0), -- Stored in cents
-    note VARCHAR(200),
     round_id UUID REFERENCES rounds(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    created_by_user_id UUID NOT NULL,
 
     -- Cannot pay yourself
-    CHECK (from_player_id != to_player_id)
+    CONSTRAINT transactions_no_self_pay CHECK (from_user_id != to_user_id)
 );
 
 -- ============================================
@@ -65,11 +58,12 @@ CREATE TABLE transactions (
 -- ============================================
 
 CREATE INDEX idx_rooms_code ON rooms(code);
-CREATE INDEX idx_players_room_id ON players(room_id);
-CREATE INDEX idx_players_user_id ON players(user_id);
+CREATE INDEX idx_profiles_current_room ON profiles(current_room_id);
 CREATE INDEX idx_transactions_room_id ON transactions(room_id);
 CREATE INDEX idx_transactions_round_id ON transactions(round_id);
 CREATE INDEX idx_transactions_created_at ON transactions(created_at DESC);
+CREATE INDEX idx_transactions_from_user ON transactions(from_user_id);
+CREATE INDEX idx_transactions_to_user ON transactions(to_user_id);
 CREATE INDEX idx_rounds_room_id ON rounds(room_id);
 
 -- ============================================
@@ -77,20 +71,26 @@ CREATE INDEX idx_rounds_room_id ON rounds(room_id);
 -- ============================================
 
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE players ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+-- Helper function: Get user's current room id (bypasses RLS)
+CREATE OR REPLACE FUNCTION get_user_room_id(user_uuid UUID)
+RETURNS UUID AS $$
+DECLARE
+    room_id UUID;
+BEGIN
+    SELECT current_room_id INTO room_id FROM profiles WHERE user_id = user_uuid;
+    RETURN room_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Helper function: Check if user is a member of a room
 CREATE OR REPLACE FUNCTION is_room_member(room_uuid UUID, user_uuid UUID)
 RETURNS BOOLEAN AS $$
 BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM players
-        WHERE room_id = room_uuid
-        AND user_id = user_uuid
-        AND is_active = TRUE
-    );
+    RETURN get_user_room_id(user_uuid) = room_uuid;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -125,21 +125,22 @@ CREATE POLICY "Anyone can lookup room by code" ON rooms
 CREATE POLICY "Room creator can update" ON rooms
     FOR UPDATE USING (created_by_user_id = auth.uid());
 
--- PLAYERS POLICIES
--- Anyone authenticated can join a room (create player record)
-CREATE POLICY "Authenticated users can join rooms" ON players
-    FOR INSERT WITH CHECK (
-        auth.uid() IS NOT NULL AND user_id = auth.uid()
-    );
+-- PROFILES POLICIES
+-- Users can view own profile
+CREATE POLICY "Users can view own profile" ON profiles
+    FOR SELECT USING (user_id = auth.uid());
 
--- Room members can view all players in their rooms
-CREATE POLICY "Room members can view players" ON players
+-- Users can view profiles in same room (use function to avoid recursion)
+CREATE POLICY "Users can view profiles in same room" ON profiles
     FOR SELECT USING (
-        is_room_member(room_id, auth.uid()) OR user_id = auth.uid()
+        current_room_id IS NOT NULL AND
+        current_room_id = get_user_room_id(auth.uid())
     );
 
--- Players can update their own record
-CREATE POLICY "Players can update own record" ON players
+CREATE POLICY "Users can insert own profile" ON profiles
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can update own profile" ON profiles
     FOR UPDATE USING (user_id = auth.uid());
 
 -- ROUNDS POLICIES
@@ -165,7 +166,7 @@ CREATE POLICY "Room members can update rounds" ON rounds
 -- Room members can create transactions
 CREATE POLICY "Room members can create transactions" ON transactions
     FOR INSERT WITH CHECK (
-        is_room_member(room_id, auth.uid()) AND created_by_user_id = auth.uid()
+        is_room_member(room_id, auth.uid())
     );
 
 -- Room members can view transactions
@@ -174,20 +175,13 @@ CREATE POLICY "Room members can view transactions" ON transactions
         is_room_member(room_id, auth.uid())
     );
 
--- Transaction creator can delete within 5 minutes
-CREATE POLICY "Creator can delete recent transactions" ON transactions
-    FOR DELETE USING (
-        created_by_user_id = auth.uid() AND
-        created_at > NOW() - INTERVAL '5 minutes'
-    );
-
 -- ============================================
 -- REALTIME SUBSCRIPTIONS
 -- ============================================
 
 -- Enable realtime for all tables
 ALTER PUBLICATION supabase_realtime ADD TABLE rooms;
-ALTER PUBLICATION supabase_realtime ADD TABLE players;
+ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE rounds;
 ALTER PUBLICATION supabase_realtime ADD TABLE transactions;
 
@@ -195,24 +189,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE transactions;
 -- FUNCTIONS
 -- ============================================
 
--- Generate unique 6-character room code
--- Excludes confusing characters: 0/O, 1/I/l
+-- Generate unique 4-digit room code
 CREATE OR REPLACE FUNCTION generate_room_code()
-RETURNS VARCHAR(6) AS $$
+RETURNS VARCHAR(4) AS $$
 DECLARE
-    chars VARCHAR := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    code VARCHAR(6) := '';
-    i INTEGER;
+    new_code VARCHAR(4) := '';
 BEGIN
     LOOP
-        code := '';
-        FOR i IN 1..6 LOOP
-            code := code || substr(chars, floor(random() * length(chars) + 1)::int, 1);
-        END LOOP;
+        new_code := lpad(floor(random() * 9000 + 1000)::text, 4, '0');
 
         -- Check if code already exists
-        IF NOT EXISTS (SELECT 1 FROM rooms WHERE rooms.code = generate_room_code.code) THEN
-            RETURN code;
+        IF NOT EXISTS (SELECT 1 FROM rooms WHERE rooms.code = new_code) THEN
+            RETURN new_code;
         END IF;
     END LOOP;
 END;

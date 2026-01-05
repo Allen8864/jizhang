@@ -36,7 +36,6 @@ export interface Transaction {
   amount: number // in cents
   round_id: string | null
   created_at: string
-  created_by_user_id: string
 }
 
 // Computed types

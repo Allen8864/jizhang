@@ -115,7 +115,8 @@ export default function HomePage() {
       router.push(`/room/${code}?created=1`)
     } catch (err) {
       console.error('Create room error:', err)
-      alert('创建房间失败，请重试')
+      const message = err instanceof Error ? err.message : '创建房间失败'
+      alert(message)
     } finally {
       setCreating(false)
     }

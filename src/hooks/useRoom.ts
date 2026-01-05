@@ -232,7 +232,6 @@ export function useRoom(roomCode: string) {
       to_user_id: toUserId,
       amount,
       round_id: currentRound?.id || null,
-      created_by_user_id: user.id,
     })
 
     if (error) throw error
