@@ -80,24 +80,14 @@ export function SettlementView({
         throw historyError
       }
 
-      // Clear current_room_id for all players in this room
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ current_room_id: null })
-        .eq('current_room_id', room.id)
-
-      if (updateError) {
-        console.error('Failed to clear players from room:', updateError)
-      }
-
-      // Delete the room (releases the room code)
+      // Delete the room - this will trigger ON DELETE SET NULL for profiles.current_room_id
       const { error: deleteError } = await supabase
         .from('rooms')
         .delete()
         .eq('id', room.id)
 
       if (deleteError) {
-        console.error('Failed to delete room:', deleteError)
+        throw deleteError
       }
 
       // Navigate to home
