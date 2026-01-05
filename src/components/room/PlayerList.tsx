@@ -3,46 +3,41 @@
 import { useMemo } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { calculateBalances, formatBalance } from '@/lib/settlement'
-import type { Player, Transaction } from '@/types'
+import type { Profile, Transaction } from '@/types'
 
 interface PlayerListProps {
-  players: Player[]
+  players: Profile[]
   transactions: Transaction[]
-  currentPlayerId: string | null
+  currentUserId: string | null
   onAddFriend?: () => void
   onEditProfile?: () => void
-  onPlayerClick?: (player: Player) => void
+  onPlayerClick?: (player: Profile) => void
 }
 
-export function PlayerList({ players, transactions, currentPlayerId, onAddFriend, onEditProfile, onPlayerClick }: PlayerListProps) {
+export function PlayerList({ players, transactions, currentUserId, onAddFriend, onEditProfile, onPlayerClick }: PlayerListProps) {
   const balances = useMemo(() => {
     return calculateBalances(players, transactions)
   }, [players, transactions])
 
-  // Sort: current player first, then by balance (highest wins first)
+  // Sort by join time (joined_room_at)
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
-      // Current player always first
-      if (a.id === currentPlayerId) return -1
-      if (b.id === currentPlayerId) return 1
-
-      // Then sort by balance (highest first)
-      const balanceA = balances.find(bal => bal.playerId === a.id)?.balance || 0
-      const balanceB = balances.find(bal => bal.playerId === b.id)?.balance || 0
-      return balanceB - balanceA
+      const timeA = a.joined_room_at ? new Date(a.joined_room_at).getTime() : 0
+      const timeB = b.joined_room_at ? new Date(b.joined_room_at).getTime() : 0
+      return timeA - timeB
     })
-  }, [players, balances, currentPlayerId])
+  }, [players])
 
   return (
     <div className="overflow-x-auto -mx-4">
       <div className="flex gap-4 px-4 py-2 min-w-min">
           {sortedPlayers.map(player => {
-            const balance = balances.find(b => b.playerId === player.id)?.balance || 0
-            const isCurrentPlayer = player.id === currentPlayerId
+            const balance = balances.find(b => b.userId === player.user_id)?.balance || 0
+            const isCurrentPlayer = player.user_id === currentUserId
 
             return (
               <button
-                key={player.id}
+                key={player.user_id}
                 onClick={isCurrentPlayer ? onEditProfile : () => onPlayerClick?.(player)}
                 className={`flex flex-col items-center flex-shrink-0 min-w-[72px] ${
                   isCurrentPlayer ? 'relative' : ''

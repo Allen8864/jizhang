@@ -8,15 +8,17 @@ export interface Room {
   updated_at: string
 }
 
-export interface Player {
-  id: string
-  room_id: string
+export interface Profile {
   user_id: string
   name: string
   avatar_emoji: string
-  is_active: boolean
+  current_room_id: string | null
+  joined_room_at: string | null
   created_at: string
 }
+
+// Alias for backward compatibility during migration
+export type Player = Profile
 
 export interface Round {
   id: string
@@ -29,8 +31,8 @@ export interface Round {
 export interface Transaction {
   id: string
   room_id: string
-  from_player_id: string
-  to_player_id: string
+  from_user_id: string
+  to_user_id: string
   amount: number // in cents
   round_id: string | null
   created_at: string
@@ -40,8 +42,8 @@ export interface Transaction {
 // Computed types
 
 export interface PlayerBalance {
-  playerId: string
-  playerName: string
+  userId: string
+  userName: string
   balance: number // positive = winning, negative = losing
 }
 

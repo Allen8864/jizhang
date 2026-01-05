@@ -3,12 +3,12 @@
 import { useMemo } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { calculateBalances, calculateSettlement, formatAmount } from '@/lib/settlement'
-import type { Player, Transaction } from '@/types'
+import type { Profile, Transaction } from '@/types'
 
 interface SettlementViewProps {
   isOpen: boolean
   onClose: () => void
-  players: Player[]
+  players: Profile[]
   transactions: Transaction[]
 }
 
@@ -32,7 +32,7 @@ export function SettlementView({
   }, [balances])
 
   const playerMap = useMemo(() => {
-    return new Map(players.map(p => [p.id, p]))
+    return new Map(players.map(p => [p.user_id, p]))
   }, [players])
 
   return (
@@ -43,15 +43,15 @@ export function SettlementView({
           <h3 className="text-sm font-medium text-gray-500 mb-3">当前战绩</h3>
           <div className="space-y-2">
             {sortedBalances.map(bal => {
-              const player = playerMap.get(bal.playerId)
+              const player = playerMap.get(bal.userId)
               return (
                 <div
-                  key={bal.playerId}
+                  key={bal.userId}
                   className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
                     <span>{player?.avatar_emoji}</span>
-                    <span className="font-medium text-gray-900">{bal.playerName}</span>
+                    <span className="font-medium text-gray-900">{bal.userName}</span>
                   </div>
                   <span className={`font-mono font-semibold ${
                     bal.balance > 0

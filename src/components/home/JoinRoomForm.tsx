@@ -32,9 +32,9 @@ export function JoinRoomForm() {
       return
     }
 
-    const code = roomCode.toUpperCase().trim()
-    if (code.length !== 6) {
-      setError('请输入6位房间号')
+    const code = roomCode.trim()
+    if (code.length !== 4 || !/^\d{4}$/.test(code)) {
+      setError('请输入4位数字房间号')
       return
     }
 
@@ -58,33 +58,20 @@ export function JoinRoomForm() {
         throw new Error('房间不存在，请检查房间号')
       }
 
-      // Check if user is already a member
-      const { data: existingPlayer } = await supabase
-        .from('players')
-        .select('id')
-        .eq('room_id', room.id)
-        .eq('user_id', user.id)
-        .single()
+      // Upsert profile with current_room_id
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          name: nickname.trim(),
+          avatar_emoji: getRandomEmoji(),
+          current_room_id: room.id,
+          joined_room_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        })
 
-      if (!existingPlayer) {
-        // Join room by creating player record
-        const { error: playerError } = await supabase
-          .from('players')
-          .insert({
-            room_id: room.id,
-            user_id: user.id,
-            name: nickname.trim(),
-            avatar_emoji: getRandomEmoji(),
-          })
-
-        if (playerError) {
-          if (playerError.code === '23505') {
-            // Duplicate key - user already in room, ignore
-          } else {
-            throw playerError
-          }
-        }
-      }
+      if (profileError) throw profileError
 
       // Save nickname preference
       try {
@@ -103,9 +90,9 @@ export function JoinRoomForm() {
     }
   }
 
-  // Format room code as user types
+  // Format room code as user types (only allow digits)
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+    const value = e.target.value.replace(/[^\d]/g, '').slice(0, 4)
     setRoomCode(value)
   }
 
@@ -113,11 +100,11 @@ export function JoinRoomForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         label="房间号"
-        placeholder="输入6位房间号"
+        placeholder="输入4位数字房间号"
         value={roomCode}
         onChange={handleCodeChange}
         className="text-center text-xl tracking-widest font-mono"
-        maxLength={6}
+        maxLength={4}
       />
 
       <Input
@@ -138,7 +125,7 @@ export function JoinRoomForm() {
         className="w-full"
         size="lg"
         loading={loading || authLoading}
-        disabled={roomCode.length !== 6 || !nickname.trim()}
+        disabled={roomCode.length !== 4 || !nickname.trim()}
       >
         加入房间
       </Button>

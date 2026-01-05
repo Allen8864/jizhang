@@ -54,29 +54,20 @@ export function JoinRoomModal({
         throw new Error('房间不存在，请检查房间号')
       }
 
-      // Check if user is already a member
-      const { data: existingPlayer } = await supabase
-        .from('players')
-        .select('id')
-        .eq('room_id', room.id)
-        .eq('user_id', user.id)
-        .single()
+      // Upsert profile with current_room_id
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          name: nickname,
+          avatar_emoji: emoji,
+          current_room_id: room.id,
+          joined_room_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        })
 
-      if (!existingPlayer) {
-        // Join room by creating player record
-        const { error: playerError } = await supabase
-          .from('players')
-          .insert({
-            room_id: room.id,
-            user_id: user.id,
-            name: nickname,
-            avatar_emoji: emoji,
-          })
-
-        if (playerError && playerError.code !== '23505') {
-          throw playerError
-        }
-      }
+      if (profileError) throw profileError
 
       onClose()
       router.push(`/room/${code}`)

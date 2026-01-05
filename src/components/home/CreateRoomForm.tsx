@@ -60,17 +60,20 @@ export function CreateRoomForm() {
 
       if (roomError) throw roomError
 
-      // Create player record for creator
-      const { error: playerError } = await supabase
-        .from('players')
-        .insert({
-          room_id: room.id,
+      // Upsert profile with current_room_id
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
           user_id: user.id,
           name: nickname.trim(),
           avatar_emoji: getRandomEmoji(),
+          current_room_id: room.id,
+          joined_room_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
         })
 
-      if (playerError) throw playerError
+      if (profileError) throw profileError
 
       // Save nickname preference
       try {

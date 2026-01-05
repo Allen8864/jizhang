@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSupabase } from './useSupabase'
-import type { Room, Player, Transaction, Round, RoomHistory } from '@/types'
+import type { Room, Profile, Transaction, Round, RoomHistory } from '@/types'
 
 interface RoomState {
   room: Room | null
-  players: Player[]
+  players: Profile[]
   transactions: Transaction[]
   rounds: Round[]
-  currentPlayer: Player | null
+  currentPlayer: Profile | null
   loading: boolean
   error: string | null
   isConnected: boolean
@@ -56,17 +56,17 @@ export function useRoom(roomCode: string) {
         if (!room) throw new Error('房间不存在')
 
         // Fetch all related data in parallel
-        const [playersRes, transactionsRes, roundsRes] = await Promise.all([
-          supabase.from('players').select('*').eq('room_id', room.id).eq('is_active', true),
+        const [profilesRes, transactionsRes, roundsRes] = await Promise.all([
+          supabase.from('profiles').select('*').eq('current_room_id', room.id),
           supabase.from('transactions').select('*').eq('room_id', room.id).order('created_at', { ascending: false }),
           supabase.from('rounds').select('*').eq('room_id', room.id).order('index', { ascending: true }),
         ])
 
-        const currentPlayer = playersRes.data?.find(p => p.user_id === user.id) || null
+        const currentPlayer = profilesRes.data?.find(p => p.user_id === user.id) || null
 
         setState({
           room,
-          players: playersRes.data || [],
+          players: profilesRes.data || [],
           transactions: transactionsRes.data || [],
           rounds: roundsRes.data || [],
           currentPlayer,
@@ -98,36 +98,49 @@ export function useRoom(roomCode: string) {
 
     const roomId = state.room.id
 
-    // Subscribe to players changes
-    const playersChannel = supabase
-      .channel(`players:${roomId}`)
+    // Subscribe to profiles changes (filter by current_room_id)
+    const profilesChannel = supabase
+      .channel(`profiles:${roomId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'players', filter: `room_id=eq.${roomId}` },
+        { event: '*', schema: 'public', table: 'profiles' },
         (payload) => {
           setState(prev => {
-            if (payload.eventType === 'INSERT') {
-              // Avoid duplicates
-              if (prev.players.some(p => p.id === (payload.new as Player).id)) {
-                return prev
-              }
-              return { ...prev, players: [...prev.players, payload.new as Player] }
-            }
-            if (payload.eventType === 'UPDATE') {
-              return {
-                ...prev,
-                players: prev.players.map(p =>
-                  p.id === (payload.new as Player).id ? payload.new as Player : p
-                ),
-                currentPlayer: prev.currentPlayer?.id === (payload.new as Player).id
-                  ? payload.new as Player
-                  : prev.currentPlayer,
+            const newProfile = payload.new as Profile
+            const oldProfile = payload.old as { user_id: string; current_room_id: string | null }
+
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              // Check if profile joined this room
+              if (newProfile.current_room_id === roomId) {
+                // Avoid duplicates
+                const exists = prev.players.some(p => p.user_id === newProfile.user_id)
+                if (exists) {
+                  // Update existing
+                  return {
+                    ...prev,
+                    players: prev.players.map(p =>
+                      p.user_id === newProfile.user_id ? newProfile : p
+                    ),
+                    currentPlayer: prev.currentPlayer?.user_id === newProfile.user_id
+                      ? newProfile
+                      : prev.currentPlayer,
+                  }
+                } else {
+                  // Add new
+                  return { ...prev, players: [...prev.players, newProfile] }
+                }
+              } else if (oldProfile?.current_room_id === roomId) {
+                // Profile left this room
+                return {
+                  ...prev,
+                  players: prev.players.filter(p => p.user_id !== oldProfile.user_id),
+                }
               }
             }
             if (payload.eventType === 'DELETE') {
               return {
                 ...prev,
-                players: prev.players.filter(p => p.id !== (payload.old as { id: string }).id),
+                players: prev.players.filter(p => p.user_id !== oldProfile.user_id),
               }
             }
             return prev
@@ -197,7 +210,7 @@ export function useRoom(roomCode: string) {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(playersChannel)
+      supabase.removeChannel(profilesChannel)
       supabase.removeChannel(transactionsChannel)
       supabase.removeChannel(roundsChannel)
     }
@@ -205,8 +218,8 @@ export function useRoom(roomCode: string) {
 
   // Actions
   const addTransaction = useCallback(async (
-    fromPlayerId: string,
-    toPlayerId: string,
+    fromUserId: string,
+    toUserId: string,
     amount: number
   ) => {
     if (!state.room || !user) throw new Error('未加入房间')
@@ -215,8 +228,8 @@ export function useRoom(roomCode: string) {
 
     const { error } = await supabase.from('transactions').insert({
       room_id: state.room.id,
-      from_player_id: fromPlayerId,
-      to_player_id: toPlayerId,
+      from_user_id: fromUserId,
+      to_user_id: toUserId,
       amount,
       round_id: currentRound?.id || null,
       created_by_user_id: user.id,
@@ -282,7 +295,7 @@ export function useRoom(roomCode: string) {
 }
 
 // Helper to save room to localStorage
-function saveRoomToHistory(room: Room, player: Player) {
+function saveRoomToHistory(room: Room, profile: Profile) {
   try {
     const historyStr = localStorage.getItem('jizhang_rooms')
     const history: RoomHistory[] = historyStr ? JSON.parse(historyStr) : []
@@ -291,7 +304,7 @@ function saveRoomToHistory(room: Room, player: Player) {
     const entry: RoomHistory = {
       id: room.id,
       code: room.code,
-      playerName: player.name,
+      playerName: profile.name,
       lastVisited: new Date().toISOString(),
     }
 

@@ -5,14 +5,14 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { parseToCents } from '@/lib/settlement'
-import type { Player } from '@/types'
+import type { Profile } from '@/types'
 
 interface TransactionFormProps {
   isOpen: boolean
   onClose: () => void
-  fromPlayer: Player | null
-  toPlayer: Player | null
-  onSubmit: (fromId: string, toId: string, amount: number) => Promise<void>
+  fromPlayer: Profile | null
+  toPlayer: Profile | null
+  onSubmit: (fromUserId: string, toUserId: string, amount: number) => Promise<void>
 }
 
 export function TransactionForm({
@@ -52,7 +52,7 @@ export function TransactionForm({
     setLoading(true)
 
     try {
-      await onSubmit(fromPlayer.id, toPlayer.id, cents)
+      await onSubmit(fromPlayer.user_id, toPlayer.user_id, cents)
 
       // Haptic feedback on mobile
       if (navigator.vibrate) navigator.vibrate(50)
@@ -76,7 +76,7 @@ export function TransactionForm({
               emoji={fromPlayer?.avatar_emoji}
               size="lg"
             />
-            <span className="mt-1 text-sm text-gray-600 truncate max-w-[60px]">
+            <span className="mt-1 text-sm text-gray-600 truncate max-w-[100px]">
               {fromPlayer?.name || '我'}
             </span>
           </div>
@@ -94,7 +94,7 @@ export function TransactionForm({
               emoji={toPlayer?.avatar_emoji}
               size="lg"
             />
-            <span className="mt-1 text-sm text-gray-600 truncate max-w-[60px]">
+            <span className="mt-1 text-sm text-gray-600 truncate max-w-[100px]">
               {toPlayer?.name || '对方'}
             </span>
           </div>

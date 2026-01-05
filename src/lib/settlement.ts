@@ -1,4 +1,4 @@
-import type { PlayerBalance, SettlementTransfer, Transaction, Player } from '@/types'
+import type { PlayerBalance, SettlementTransfer, Transaction, Profile } from '@/types'
 
 /**
  * Calculate player balances from transactions
@@ -6,28 +6,28 @@ import type { PlayerBalance, SettlementTransfer, Transaction, Player } from '@/t
  * balance < 0: player owes money (losing)
  */
 export function calculateBalances(
-  players: Player[],
+  players: Profile[],
   transactions: Transaction[]
 ): PlayerBalance[] {
   const balanceMap = new Map<string, number>()
 
   // Initialize all players with 0 balance
-  players.forEach(p => balanceMap.set(p.id, 0))
+  players.forEach(p => balanceMap.set(p.user_id, 0))
 
   // Process transactions
   // If A pays B $10, A loses $10 (negative) and B gains $10 (positive)
   transactions.forEach(t => {
-    const fromBalance = balanceMap.get(t.from_player_id) || 0
-    const toBalance = balanceMap.get(t.to_player_id) || 0
+    const fromBalance = balanceMap.get(t.from_user_id) || 0
+    const toBalance = balanceMap.get(t.to_user_id) || 0
 
-    balanceMap.set(t.from_player_id, fromBalance - t.amount)
-    balanceMap.set(t.to_player_id, toBalance + t.amount)
+    balanceMap.set(t.from_user_id, fromBalance - t.amount)
+    balanceMap.set(t.to_user_id, toBalance + t.amount)
   })
 
   return players.map(p => ({
-    playerId: p.id,
-    playerName: p.name,
-    balance: balanceMap.get(p.id) || 0,
+    userId: p.user_id,
+    userName: p.name,
+    balance: balanceMap.get(p.user_id) || 0,
   }))
 }
 
@@ -61,8 +61,8 @@ export function calculateSettlement(balances: PlayerBalance[]): SettlementTransf
 
     if (amount > 0) {
       transfers.push({
-        from: { id: debtor.playerId, name: debtor.playerName },
-        to: { id: creditor.playerId, name: creditor.playerName },
+        from: { id: debtor.userId, name: debtor.userName },
+        to: { id: creditor.userId, name: creditor.userName },
         amount,
       })
     }

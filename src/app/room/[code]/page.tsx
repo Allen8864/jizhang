@@ -7,6 +7,7 @@ import { useSupabase } from '@/hooks/useSupabase'
 import { RoomHeader } from '@/components/room/RoomHeader'
 import { PlayerList } from '@/components/room/PlayerList'
 import { TransactionList } from '@/components/room/TransactionList'
+import { GameRoundTable } from '@/components/room/GameRoundTable'
 import { TransactionForm } from '@/components/room/TransactionForm'
 import { SettlementView } from '@/components/room/SettlementView'
 import { ShareModal } from '@/components/room/ShareModal'
@@ -14,7 +15,7 @@ import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { getRandomNickname, getRandomEmoji, type Player } from '@/types'
+import { getRandomNickname, getRandomEmoji, type Profile } from '@/types'
 
 export default function RoomPage() {
   const params = useParams()
@@ -38,7 +39,7 @@ export default function RoomPage() {
   } = useRoom(roomCode)
 
   const [showTransactionForm, setShowTransactionForm] = useState(false)
-  const [targetPlayer, setTargetPlayer] = useState<Player | null>(null)
+  const [targetPlayer, setTargetPlayer] = useState<Profile | null>(null)
   const [showSettlement, setShowSettlement] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
@@ -83,7 +84,7 @@ export default function RoomPage() {
     return rounds.find(r => !r.ended_at) || null
   }, [rounds])
 
-  // Handle join room
+  // Handle join room - upsert profile with current_room_id
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!room || !user) return
@@ -97,22 +98,20 @@ export default function RoomPage() {
     setJoinError('')
 
     try {
-      const { error: playerError } = await supabase
-        .from('players')
-        .insert({
-          room_id: room.id,
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
           user_id: user.id,
           name: nickname.trim(),
           avatar_emoji: getRandomEmoji(),
+          current_room_id: room.id,
+          joined_room_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
         })
 
-      if (playerError) {
-        if (playerError.code === '23505') {
-          // Already a member, just refresh
-          window.location.reload()
-        } else {
-          throw playerError
-        }
+      if (profileError) {
+        throw profileError
       }
 
       // Save nickname preference
@@ -135,11 +134,11 @@ export default function RoomPage() {
 
   // Handle add transaction
   const handleAddTransaction = useCallback(async (
-    fromId: string,
-    toId: string,
+    fromUserId: string,
+    toUserId: string,
     amount: number
   ) => {
-    await addTransaction(fromId, toId, amount)
+    await addTransaction(fromUserId, toUserId, amount)
   }, [addTransaction])
 
   // Handle new round
@@ -157,9 +156,9 @@ export default function RoomPage() {
 
     try {
       await supabase
-        .from('players')
+        .from('profiles')
         .update({ avatar_emoji: emoji, name: newNickname })
-        .eq('id', currentPlayer.id)
+        .eq('user_id', currentPlayer.user_id)
 
       // Save nickname preference
       try {
@@ -254,7 +253,7 @@ export default function RoomPage() {
         <PlayerList
           players={players}
           transactions={transactions}
-          currentPlayerId={currentPlayer?.id || null}
+          currentUserId={currentPlayer?.user_id || null}
           onAddFriend={() => setShowShareModal(true)}
           onEditProfile={() => setShowProfileEditor(true)}
           onPlayerClick={(player) => {
@@ -289,9 +288,12 @@ export default function RoomPage() {
 
         {/* Tab content */}
         {activeTab === 'game' ? (
-          <div className="text-center text-gray-400 py-8">
-            牌局内容
-          </div>
+          <GameRoundTable
+            players={players}
+            transactions={transactions}
+            rounds={rounds}
+            currentUserId={currentPlayer?.user_id || null}
+          />
         ) : (
           <TransactionList
             transactions={transactions}
