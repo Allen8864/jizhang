@@ -225,11 +225,11 @@ export default function RoomPage() {
   if (!room) return null
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <RoomHeader room={room} isConnected={isConnected} playerCount={players.length} onOpenSettings={() => setShowSettingsModal(true)} />
 
-      <main className="px-4 py-4 max-w-md mx-auto space-y-4">
-        {/* Player list */}
+      {/* Fixed player list */}
+      <div className="flex-shrink-0 px-4 pt-4 max-w-md mx-auto w-full">
         <PlayerList
           players={players}
           transactions={transactions}
@@ -241,8 +241,10 @@ export default function RoomPage() {
             setShowTransactionForm(true)
           }}
         />
+      </div>
 
-        {/* Tabs */}
+      {/* Fixed Tabs */}
+      <div className="flex-shrink-0 px-4 pt-4 max-w-md mx-auto w-full">
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setActiveTab('game')}
@@ -265,7 +267,10 @@ export default function RoomPage() {
             记录
           </button>
         </div>
+      </div>
 
+      {/* Scrollable content area */}
+      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24 max-w-md mx-auto w-full">
         {/* Tab content */}
         {activeTab === 'game' ? (
           <GameRoundTable
