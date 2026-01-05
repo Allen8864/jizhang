@@ -18,7 +18,7 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setShareUrl(`${window.location.origin}/room/${room.code}`)
+      setShareUrl(`${window.location.origin}/room/${room.code}?joined=1`)
     }
   }, [room.code])
 

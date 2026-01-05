@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useRoom } from '@/hooks/useRoom'
 import { useSupabase } from '@/hooks/useSupabase'
@@ -15,7 +15,6 @@ import { RoomSettingsModal } from '@/components/room/RoomSettingsModal'
 import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { getRandomNickname, getRandomEmoji, type Profile } from '@/types'
 
 export default function RoomPage() {
@@ -24,6 +23,7 @@ export default function RoomPage() {
   const searchParams = useSearchParams()
   const roomCode = (params.code as string).toUpperCase()
   const isNewlyCreated = searchParams.get('created') === '1'
+  const isNewMember = searchParams.get('joined') === '1'
 
   const { user, supabase, loading: authLoading } = useSupabase()
   const {
@@ -48,33 +48,61 @@ export default function RoomPage() {
   const [showSettlement, setShowSettlement] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [showJoinForm, setShowJoinForm] = useState(false)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
-  const [nickname, setNickname] = useState('')
-  const [joining, setJoining] = useState(false)
-  const [joinError, setJoinError] = useState('')
   const [activeTab, setActiveTab] = useState<'game' | 'history'>('game')
+  const [autoJoining, setAutoJoining] = useState(false)
+  const hasAutoJoined = useRef(false)
 
-  // Load saved nickname or generate random one
+  // Auto-join room if user is not a member
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('jizhang_nickname')
-      if (saved) {
-        setNickname(saved)
-      } else {
-        setNickname(getRandomNickname())
+    if (hasAutoJoined.current) return
+    if (loading || authLoading || !room || !user || currentPlayer || autoJoining) return
+
+    hasAutoJoined.current = true
+    setAutoJoining(true)
+
+    const autoJoin = async () => {
+      try {
+        // Get saved or random nickname/emoji
+        let nickname = getRandomNickname()
+        let emoji = getRandomEmoji()
+        try {
+          const savedNickname = localStorage.getItem('jizhang_nickname')
+          const savedEmoji = localStorage.getItem('jizhang_emoji')
+          if (savedNickname) nickname = savedNickname
+          if (savedEmoji) emoji = savedEmoji
+        } catch {
+          // Ignore localStorage errors
+        }
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user.id,
+            name: nickname,
+            avatar_emoji: emoji,
+            current_room_id: room.id,
+            joined_room_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id',
+          })
+
+        if (profileError) {
+          console.error('Auto-join error:', profileError)
+          return
+        }
+
+        // Reload with joined param to show profile editor
+        window.location.href = `/room/${roomCode}?joined=1`
+      } catch (err) {
+        console.error('Auto-join error:', err)
+      } finally {
+        setAutoJoining(false)
       }
-    } catch (e) {
-      setNickname(getRandomNickname())
     }
-  }, [])
 
-  // Show join form if room exists but user is not a member
-  useEffect(() => {
-    if (!loading && room && !currentPlayer && user) {
-      setShowJoinForm(true)
-    }
-  }, [loading, room, currentPlayer, user])
+    autoJoin()
+  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase])
 
   // Show share modal if room was just created
   useEffect(() => {
@@ -85,60 +113,21 @@ export default function RoomPage() {
     }
   }, [isNewlyCreated, room, loading, router, roomCode])
 
-  // Handle room settled - redirect to home
+  // Show profile editor for new member
   useEffect(() => {
-    if (error === 'room_settled') {
+    if (isNewMember && room && !loading && currentPlayer) {
+      setShowProfileEditor(true)
+      // Remove the query param from URL without refresh
+      router.replace(`/room/${roomCode}`, { scroll: false })
+    }
+  }, [isNewMember, room, loading, currentPlayer, router, roomCode])
+
+  // Handle room errors - redirect to home
+  useEffect(() => {
+    if (error === 'room_settled' || error === '房间不存在') {
       router.push('/')
     }
   }, [error, router])
-
-  // Handle join room - upsert profile with current_room_id
-  const handleJoin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!room || !user) return
-
-    if (!nickname.trim()) {
-      setJoinError('请输入你的昵称')
-      return
-    }
-
-    setJoining(true)
-    setJoinError('')
-
-    try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
-          name: nickname.trim(),
-          avatar_emoji: getRandomEmoji(),
-          current_room_id: room.id,
-          joined_room_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        })
-
-      if (profileError) {
-        throw profileError
-      }
-
-      // Save nickname preference
-      try {
-        localStorage.setItem('jizhang_nickname', nickname.trim())
-      } catch (e) {
-        // Ignore
-      }
-
-      setShowJoinForm(false)
-      // Refresh to load updated data
-      window.location.reload()
-    } catch (err) {
-      console.error('Join error:', err)
-      setJoinError(err instanceof Error ? err.message : '加入失败')
-    } finally {
-      setJoining(false)
-    }
-  }
 
   // Handle add transaction
   const handleAddTransaction = useCallback(async (
@@ -159,12 +148,12 @@ export default function RoomPage() {
   }, [startNewRound])
 
   // Loading state
-  if (loading || authLoading) {
+  if (loading || authLoading || autoJoining) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-500">加载中...</p>
+          <p className="text-gray-500">{autoJoining ? '正在加入房间...' : '加载中...'}</p>
         </div>
       </div>
     )
@@ -172,13 +161,15 @@ export default function RoomPage() {
 
   // Error state
   if (error) {
-    // Don't show error UI for room_settled, we're redirecting
-    if (error === 'room_settled') {
+    // Don't show error UI for redirecting errors
+    if (error === 'room_settled' || error === '房间不存在') {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-gray-500">房间已结算，正在返回首页...</p>
+            <p className="text-gray-500">
+              {error === 'room_settled' ? '房间已结算，正在返回首页...' : '房间不存在，正在返回首页...'}
+            </p>
           </div>
         </div>
       )
@@ -197,44 +188,6 @@ export default function RoomPage() {
           <Button onClick={() => router.push('/')}>
             返回首页
           </Button>
-        </div>
-      </div>
-    )
-  }
-
-  // Join form for new members
-  if (showJoinForm && room) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-1">加入房间</h2>
-          <p className="text-gray-500 mb-6">房间号: {room.code}</p>
-
-          <form onSubmit={handleJoin} className="space-y-4">
-            <Input
-              label="你的昵称"
-              placeholder="输入你的昵称"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              maxLength={20}
-              required
-              autoFocus
-            />
-
-            {joinError && (
-              <p className="text-red-500 text-sm">{joinError}</p>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              loading={joining}
-              disabled={!nickname.trim()}
-            >
-              加入房间
-            </Button>
-          </form>
         </div>
       </div>
     )
