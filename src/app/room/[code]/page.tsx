@@ -23,7 +23,7 @@ export default function RoomPage() {
   const searchParams = useSearchParams()
   const roomCode = (params.code as string).toUpperCase()
   const isNewlyCreated = searchParams.get('created') === '1'
-  const isNewMember = searchParams.get('joined') === '1'
+  const isNewUser = searchParams.get('new') === '1'
 
   const { user, supabase, loading: authLoading } = useSupabase()
   const {
@@ -63,16 +63,29 @@ export default function RoomPage() {
 
     const autoJoin = async () => {
       try {
-        // Get saved or random nickname/emoji
-        let nickname = getRandomNickname()
-        let emoji = getRandomEmoji()
-        try {
-          const savedNickname = localStorage.getItem('jizhang_nickname')
-          const savedEmoji = localStorage.getItem('jizhang_emoji')
-          if (savedNickname) nickname = savedNickname
-          if (savedEmoji) emoji = savedEmoji
-        } catch {
-          // Ignore localStorage errors
+        // Check if user already has a profile
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('name, avatar_emoji')
+          .eq('user_id', user.id)
+          .single()
+
+        const isFirstTimeUser = !existingProfile
+
+        // Use existing profile data or generate new
+        let nickname = existingProfile?.name || getRandomNickname()
+        let emoji = existingProfile?.avatar_emoji || getRandomEmoji()
+
+        // For new users, also check localStorage
+        if (isFirstTimeUser) {
+          try {
+            const savedNickname = localStorage.getItem('jizhang_nickname')
+            const savedEmoji = localStorage.getItem('jizhang_emoji')
+            if (savedNickname) nickname = savedNickname
+            if (savedEmoji) emoji = savedEmoji
+          } catch {
+            // Ignore localStorage errors
+          }
         }
 
         const { error: profileError } = await supabase
@@ -92,8 +105,12 @@ export default function RoomPage() {
           return
         }
 
-        // Reload with joined param to show profile editor
-        window.location.href = `/room/${roomCode}?joined=1`
+        // Reload with new param if first time user to show profile editor
+        if (isFirstTimeUser) {
+          window.location.href = `/room/${roomCode}?new=1`
+        } else {
+          window.location.reload()
+        }
       } catch (err) {
         console.error('Auto-join error:', err)
       } finally {
@@ -102,7 +119,7 @@ export default function RoomPage() {
     }
 
     autoJoin()
-  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase])
+  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase, roomCode])
 
   // Show share modal if room was just created
   useEffect(() => {
@@ -113,14 +130,14 @@ export default function RoomPage() {
     }
   }, [isNewlyCreated, room, loading, router, roomCode])
 
-  // Show profile editor for new member
+  // Show profile editor for new user
   useEffect(() => {
-    if (isNewMember && room && !loading && currentPlayer) {
+    if (!room || loading || !currentPlayer) return
+    if (isNewUser) {
       setShowProfileEditor(true)
-      // Remove the query param from URL without refresh
       router.replace(`/room/${roomCode}`, { scroll: false })
     }
-  }, [isNewMember, room, loading, currentPlayer, router, roomCode])
+  }, [room, loading, currentPlayer, isNewUser, router, roomCode])
 
   // Handle room errors - redirect to home
   useEffect(() => {
