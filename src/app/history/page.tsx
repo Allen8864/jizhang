@@ -71,16 +71,29 @@ export default function HistoryPage() {
     fetchHistory()
   }, [user, supabase, authLoading])
 
-  // Format datetime as YYYY-MM-DD HH:mm
+  // Format datetime as MM-DD HH:mm (without year)
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr)
-    const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
-    return `${year}-${month}-${day} ${hours}:${minutes}`
+    return `${month}-${day} ${hours}:${minutes}`
   }
+
+  // Group history by year
+  const historyByYear = useMemo(() => {
+    const groups: { [year: string]: SettlementHistory[] } = {}
+    history.forEach(record => {
+      const year = new Date(record.settled_at).getFullYear().toString()
+      if (!groups[year]) {
+        groups[year] = []
+      }
+      groups[year].push(record)
+    })
+    // Sort years descending
+    return Object.entries(groups).sort((a, b) => Number(b[0]) - Number(a[0]))
+  }, [history])
 
   // Get current user's result from a record
   const getMyResult = (record: SettlementHistory) => {
@@ -161,103 +174,117 @@ export default function HistoryPage() {
             <p className="text-sm mt-1">结算房间后会在这里显示</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {history.map((record) => {
-              const isExpanded = expandedId === record.id
-              // Sort by balance descending
-              const sortedResults = [...record.player_results].sort((a, b) => b.balance - a.balance)
-              const myResult = getMyResult(record)
-              const isWin = myResult && myResult.balance > 0
-              const isLoss = myResult && myResult.balance < 0
+          <div className="space-y-6">
+            {historyByYear.map(([year, records]) => (
+              <div key={year}>
+                {/* Year header - align year text with card's month display */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-px bg-gray-200" />
+                  <span className="text-sm font-medium text-gray-500">{year}年</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
 
-              return (
-                <div
-                  key={record.id}
-                  className="bg-white rounded-xl border border-gray-100 overflow-hidden"
-                >
-                  {/* Header - clickable */}
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : record.id)}
-                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs text-gray-500 whitespace-nowrap">{formatDateTime(record.settled_at)}</span>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">房：{record.room_code}</span>
-                      {myResult && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${
-                          isWin
-                            ? 'bg-green-100 text-green-700'
-                            : isLoss
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {isWin ? '赢' : isLoss ? '输' : '平'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {myResult && (
-                        <span className={`font-num font-semibold ${
-                          isWin
-                            ? 'text-green-600'
-                            : isLoss
-                            ? 'text-red-600'
-                            : 'text-gray-400'
-                        }`}>
-                          {myResult.balance > 0 ? '+' : ''}{formatAmount(myResult.balance)}
-                        </span>
-                      )}
-                      <svg
-                        className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                {/* Records for this year */}
+                <div className="space-y-3">
+                  {records.map((record) => {
+                    const isExpanded = expandedId === record.id
+                    // Sort by balance descending
+                    const sortedResults = [...record.player_results].sort((a, b) => b.balance - a.balance)
+                    const myResult = getMyResult(record)
+                    const isWin = myResult && myResult.balance > 0
+                    const isLoss = myResult && myResult.balance < 0
+
+                    return (
+                      <div
+                        key={record.id}
+                        className="bg-white rounded-xl border border-gray-100 overflow-hidden"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </button>
-
-                  {/* Expanded content */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-gray-50">
-                      <div className="pt-3 space-y-2">
-                        {sortedResults.map((player, idx) => {
-                          const isMe = user && player.user_id === user.id
-                          return (
-                            <div
-                              key={idx}
-                              className={`flex items-center justify-between py-2 px-3 rounded-lg ${
-                                isMe
-                                  ? 'bg-emerald-50 ring-1 ring-emerald-200'
-                                  : 'bg-gray-50'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span>{player.emoji}</span>
-                                <span className={`font-medium ${isMe ? 'text-emerald-900' : 'text-gray-900'}`}>
-                                  {player.name}
-                                  {isMe && <span className="ml-1 text-xs text-emerald-600">(我)</span>}
-                                </span>
-                              </div>
+                        {/* Header - clickable */}
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : record.id)}
+                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs text-gray-500 whitespace-nowrap">{formatDateTime(record.settled_at)}</span>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">房：{record.room_code}</span>
+                            {myResult && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${
+                                isWin
+                                  ? 'bg-green-100 text-green-700'
+                                  : isLoss
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-gray-100 text-gray-500'
+                              }`}>
+                                {isWin ? '赢' : isLoss ? '输' : '平'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {myResult && (
                               <span className={`font-num font-semibold ${
-                                player.balance > 0
+                                isWin
                                   ? 'text-green-600'
-                                  : player.balance < 0
+                                  : isLoss
                                   ? 'text-red-600'
                                   : 'text-gray-400'
                               }`}>
-                                {player.balance > 0 ? '+' : ''}{formatAmount(player.balance)}
+                                {myResult.balance > 0 ? '+' : ''}{formatAmount(myResult.balance)}
                               </span>
+                            )}
+                            <svg
+                              className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </button>
+
+                        {/* Expanded content */}
+                        {isExpanded && (
+                          <div className="px-4 pb-4 border-t border-gray-50">
+                            <div className="pt-3 space-y-2">
+                              {sortedResults.map((player, idx) => {
+                                const isMe = user && player.user_id === user.id
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+                                      isMe
+                                        ? 'bg-emerald-50 ring-1 ring-emerald-200'
+                                        : 'bg-gray-50'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span>{player.emoji}</span>
+                                      <span className={`font-medium ${isMe ? 'text-emerald-900' : 'text-gray-900'}`}>
+                                        {player.name}
+                                        {isMe && <span className="ml-1 text-xs text-emerald-600">(我)</span>}
+                                      </span>
+                                    </div>
+                                    <span className={`font-num font-semibold ${
+                                      player.balance > 0
+                                        ? 'text-green-600'
+                                        : player.balance < 0
+                                        ? 'text-red-600'
+                                        : 'text-gray-400'
+                                    }`}>
+                                      {player.balance > 0 ? '+' : ''}{formatAmount(player.balance)}
+                                    </span>
+                                  </div>
+                                )
+                              })}
                             </div>
-                          )
-                        })}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )
+                  })}
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         )}
       </main>
