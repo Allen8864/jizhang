@@ -179,11 +179,31 @@ CREATE POLICY "Room members can view transactions" ON transactions
 -- REALTIME SUBSCRIPTIONS
 -- ============================================
 
--- Enable realtime for all tables
-ALTER PUBLICATION supabase_realtime ADD TABLE rooms;
-ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
-ALTER PUBLICATION supabase_realtime ADD TABLE rounds;
-ALTER PUBLICATION supabase_realtime ADD TABLE transactions;
+-- Enable realtime for all tables (drop first if exists to avoid errors)
+DO $$
+BEGIN
+    -- Try to add tables to realtime publication
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE rooms;
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE rounds;
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END;
+    BEGIN
+        ALTER PUBLICATION supabase_realtime ADD TABLE transactions;
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END;
+END $$;
 
 -- ============================================
 -- FUNCTIONS
