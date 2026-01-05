@@ -126,7 +126,7 @@ export function SettlementView({
                     <span>{player?.avatar_emoji}</span>
                     <span className="font-medium text-gray-900">{bal.userName}</span>
                   </div>
-                  <span className={`font-mono font-semibold ${
+                  <span className={`font-num font-semibold ${
                     bal.balance > 0
                       ? 'text-green-600'
                       : bal.balance < 0
@@ -168,7 +168,7 @@ export function SettlementView({
                         {toPlayer?.avatar_emoji} {transfer.to.name}
                       </span>
                     </div>
-                    <span className="font-mono font-bold text-lg text-gray-900">
+                    <span className="font-num font-bold text-lg text-gray-900">
                       {formatAmount(transfer.amount)}
                     </span>
                   </div>

@@ -55,7 +55,7 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
         {/* Room code display */}
         <div className="text-center">
           <p className="text-sm text-gray-500 mb-2">房间号</p>
-          <div className="text-4xl font-mono font-bold text-gray-900 tracking-widest">
+          <div className="text-4xl font-num font-bold text-gray-900 tracking-widest">
             {room.code}
           </div>
         </div>

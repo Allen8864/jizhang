@@ -197,7 +197,7 @@ export default function HistoryPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {myResult && (
-                        <span className={`font-mono font-semibold ${
+                        <span className={`font-num font-semibold ${
                           isWin
                             ? 'text-green-600'
                             : isLoss
@@ -240,7 +240,7 @@ export default function HistoryPage() {
                                   {isMe && <span className="ml-1 text-xs text-emerald-600">(我)</span>}
                                 </span>
                               </div>
-                              <span className={`font-mono font-semibold ${
+                              <span className={`font-num font-semibold ${
                                 player.balance > 0
                                   ? 'text-green-600'
                                   : player.balance < 0

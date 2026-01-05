@@ -93,7 +93,7 @@ export function JoinRoomModal({
           placeholder="输入4位数字房间号"
           value={roomCode}
           onChange={handleCodeChange}
-          className="text-center text-2xl tracking-[0.3em] font-mono"
+          className="text-center text-2xl tracking-[0.3em] font-num"
           maxLength={4}
           inputMode="numeric"
           autoFocus

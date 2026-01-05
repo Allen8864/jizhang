@@ -46,7 +46,7 @@ export function RecentRooms() {
             className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <div>
-              <div className="font-medium text-gray-900 font-mono">{room.code}</div>
+              <div className="font-medium text-gray-900 font-num">{room.code}</div>
               {room.playerName && (
                 <div className="text-sm text-gray-500">{room.playerName}</div>
               )}

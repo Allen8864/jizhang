@@ -103,7 +103,7 @@ export function JoinRoomForm() {
         placeholder="输入4位数字房间号"
         value={roomCode}
         onChange={handleCodeChange}
-        className="text-center text-xl tracking-widest font-mono"
+        className="text-center text-xl tracking-widest font-num"
         maxLength={4}
       />
 

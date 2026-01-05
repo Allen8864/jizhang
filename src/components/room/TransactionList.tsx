@@ -92,7 +92,7 @@ export function TransactionList({
                   <span className="font-medium text-gray-900 text-sm truncate max-w-[35%]">
                     {toPlayer?.avatar_emoji} {toPlayer?.name || '未知'}
                   </span>
-                  <span className="font-mono font-semibold text-gray-900 flex-shrink-0 ml-auto">
+                  <span className="font-num font-semibold text-gray-900 flex-shrink-0 ml-auto">
                     {formatAmount(tx.amount)}
                   </span>
                 </div>

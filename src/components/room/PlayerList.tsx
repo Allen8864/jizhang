@@ -53,7 +53,7 @@ export function PlayerList({ players, transactions, currentUserId, onAddFriend, 
                   <div className="text-sm font-medium text-gray-900 truncate max-w-[72px]">
                     {player.name}
                   </div>
-                  <div className={`text-sm font-mono font-semibold mt-0.5 ${
+                  <div className={`text-sm font-num font-semibold mt-0.5 ${
                     balance > 0
                       ? 'text-green-600'
                       : balance < 0
