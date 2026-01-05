@@ -66,14 +66,30 @@ export function RoomSettingsModal({
 
     setLeaving(true)
     try {
-      // Clear current_room_id for this user
-      const { error } = await supabase
+      // Check if room has any other players (besides current user)
+      const { count } = await supabase
         .from('profiles')
-        .update({ current_room_id: null })
-        .eq('user_id', user.id)
+        .select('*', { count: 'exact', head: true })
+        .eq('current_room_id', room.id)
+        .neq('user_id', user.id)
 
-      if (error) {
-        console.error('Leave room error:', error)
+      // If no other players, delete the room first (while still a member for RLS)
+      if (count === 0) {
+        await supabase
+          .from('rooms')
+          .delete()
+          .eq('id', room.id)
+        // current_room_id will be set to null automatically via ON DELETE SET NULL
+      } else {
+        // Clear current_room_id for this user
+        const { error } = await supabase
+          .from('profiles')
+          .update({ current_room_id: null })
+          .eq('user_id', user.id)
+
+        if (error) {
+          console.error('Leave room error:', error)
+        }
       }
 
       router.push('/')
