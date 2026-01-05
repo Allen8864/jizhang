@@ -15,14 +15,17 @@ Jizhang eliminates the hassle of manual scorekeeping during card games. Players 
 - **Game History** - View past games with personal statistics (wins, losses, win rate, total profit/loss)
 - **QR Code Sharing** - Easily invite others to join your room
 - **Auto Countdown** - Configurable countdown timer between rounds
+- **Pull to Refresh** - Swipe down to refresh room data
+- **Auto Cleanup** - Inactive rooms (3+ hours) are automatically cleaned up
 - **No Registration** - Jump right in with anonymous authentication
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 with React 19
+- **Framework**: Next.js 15 with React 19
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
 - **Backend**: Supabase (PostgreSQL + Realtime + Auth)
+- **Hosting**: Vercel
 - **QR Codes**: qrcode.react
 
 ## Getting Started
@@ -58,7 +61,9 @@ Jizhang eliminates the hassle of manual scorekeeping during card games. Players 
 
 4. Set up the database:
 
-   Run the migration in `supabase/migrations/00001_init.sql` in your Supabase SQL editor.
+   Run the migrations in your Supabase SQL editor:
+   - `supabase/migrations/00001_init.sql` - Core tables and policies
+   - `supabase/migrations/00002_cleanup_expired_rooms.sql` - Auto cleanup function
 
 5. Start the development server:
    ```bash
@@ -67,6 +72,17 @@ Jizhang eliminates the hassle of manual scorekeeping during card games. Players 
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import the project in Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy
+
+The `vercel.json` configures a daily cron job to clean up inactive rooms automatically.
+
 ## Project Structure
 
 ```
@@ -74,15 +90,15 @@ src/
 ├── app/                    # Next.js app router pages
 │   ├── page.tsx           # Home page
 │   ├── history/           # Game history page
-│   └── room/[code]/       # Dynamic room page
+│   ├── room/[code]/       # Dynamic room page
+│   └── api/cleanup/       # Cleanup API for cron job
 ├── components/
 │   ├── home/              # Home page components
 │   ├── room/              # Room page components
 │   └── ui/                # Reusable UI components
 ├── hooks/                 # Custom React hooks
 ├── lib/                   # Utilities and Supabase clients
-├── types/                 # TypeScript type definitions
-└── utils/                 # Helper functions
+└── types/                 # TypeScript type definitions
 ```
 
 ## Scripts
@@ -100,6 +116,14 @@ src/
 2. **Invite Players** - Others join using the code or QR code
 3. **Record Transactions** - Tap a player to record payments during the game
 4. **Settle Up** - When done, the app calculates the minimum number of transfers needed to settle all balances
+
+## Auto Cleanup
+
+Rooms inactive for more than 3 hours are automatically cleaned up:
+- Rooms with transactions: Settlement history is saved before deletion
+- Rooms without transactions: Directly deleted
+
+This runs daily via Vercel Cron (free tier compatible).
 
 ## License
 
