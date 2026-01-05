@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
@@ -15,78 +15,104 @@ export function PullToRefresh({ onRefresh, children, className = '' }: PullToRef
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
   const startYRef = useRef(0)
+  const currentYRef = useRef(0)
   const isPullingRef = useRef(false)
+  const pullDistanceRef = useRef(0)
 
-  // Prevent browser's native pull-to-refresh when at top
+  // Sync pullDistance to ref for use in event handlers
+  useEffect(() => {
+    pullDistanceRef.current = pullDistance
+  }, [pullDistance])
+
+  // Prevent browser's native pull-to-refresh - attach to document.body
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    const preventNativePullToRefresh = (e: TouchEvent) => {
-      // Only prevent when we're pulling down at the top
-      if (isPullingRef.current && pullDistance > 0) {
+    let lastY = 0
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isRefreshing) return
+
+      lastY = e.touches[0].clientY
+      startYRef.current = lastY
+
+      // Only enable pulling if we're at the top
+      if (container.scrollTop <= 0) {
+        isPullingRef.current = true
+      }
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const currentY = e.touches[0].clientY
+      currentYRef.current = currentY
+
+      // Check if we're pulling down from the top
+      if (isPullingRef.current && container.scrollTop <= 0) {
+        const diff = currentY - startYRef.current
+
+        if (diff > 0) {
+          // We're pulling down at the top - prevent native behavior
+          e.preventDefault()
+          e.stopPropagation()
+
+          // Apply resistance
+          const distance = Math.min(diff * 0.5, MAX_PULL)
+          setPullDistance(distance)
+        }
+      }
+
+      lastY = currentY
+    }
+
+    const handleTouchEnd = async () => {
+      if (!isPullingRef.current) return
+      isPullingRef.current = false
+
+      const currentPullDistance = pullDistanceRef.current
+
+      if (currentPullDistance >= PULL_THRESHOLD && !isRefreshing) {
+        setIsRefreshing(true)
+        setPullDistance(PULL_THRESHOLD)
+        try {
+          await onRefresh()
+        } finally {
+          setIsRefreshing(false)
+          setPullDistance(0)
+        }
+      } else {
+        setPullDistance(0)
+      }
+    }
+
+    // Use passive: false to allow preventDefault
+    container.addEventListener('touchstart', handleTouchStart, { passive: true })
+    container.addEventListener('touchmove', handleTouchMove, { passive: false })
+    container.addEventListener('touchend', handleTouchEnd, { passive: true })
+
+    // Also add to document body to catch events that bubble up
+    const preventBodyPull = (e: TouchEvent) => {
+      if (isPullingRef.current && pullDistanceRef.current > 0) {
         e.preventDefault()
       }
     }
+    document.body.addEventListener('touchmove', preventBodyPull, { passive: false })
 
-    container.addEventListener('touchmove', preventNativePullToRefresh, { passive: false })
     return () => {
-      container.removeEventListener('touchmove', preventNativePullToRefresh)
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchmove', handleTouchMove)
+      container.removeEventListener('touchend', handleTouchEnd)
+      document.body.removeEventListener('touchmove', preventBodyPull)
     }
-  }, [pullDistance])
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (isRefreshing) return
-    const container = containerRef.current
-    if (!container || container.scrollTop > 0) return
-
-    startYRef.current = e.touches[0].clientY
-    isPullingRef.current = true
-  }, [isRefreshing])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPullingRef.current || isRefreshing) return
-    const container = containerRef.current
-    if (!container || container.scrollTop > 0) {
-      isPullingRef.current = false
-      setPullDistance(0)
-      return
-    }
-
-    const currentY = e.touches[0].clientY
-    const diff = currentY - startYRef.current
-
-    if (diff > 0) {
-      // Apply resistance
-      const distance = Math.min(diff * 0.5, MAX_PULL)
-      setPullDistance(distance)
-    }
-  }, [isRefreshing])
-
-  const handleTouchEnd = useCallback(async () => {
-    if (!isPullingRef.current) return
-    isPullingRef.current = false
-
-    if (pullDistance >= PULL_THRESHOLD && !isRefreshing) {
-      setIsRefreshing(true)
-      setPullDistance(PULL_THRESHOLD)
-      try {
-        await onRefresh()
-      } finally {
-        setIsRefreshing(false)
-        setPullDistance(0)
-      }
-    } else {
-      setPullDistance(0)
-    }
-  }, [pullDistance, isRefreshing, onRefresh])
+  }, [isRefreshing, onRefresh])
 
   const progress = Math.min(pullDistance / PULL_THRESHOLD, 1)
   const shouldTrigger = pullDistance >= PULL_THRESHOLD
 
   return (
-    <div className={`relative ${className}`}>
+    <div ref={wrapperRef} className={`relative overflow-hidden ${className}`}>
       {/* Pull indicator */}
       <div
         className="absolute left-0 right-0 flex items-center justify-center pointer-events-none z-10 overflow-hidden"
@@ -134,11 +160,9 @@ export function PullToRefresh({ onRefresh, children, className = '' }: PullToRef
         className="h-full overflow-y-auto"
         style={{
           transform: `translateY(${pullDistance}px)`,
-          transition: isPullingRef.current ? 'none' : 'transform 0.2s ease-out'
+          transition: pullDistance === 0 && !isRefreshing ? 'transform 0.2s ease-out' : 'none',
+          touchAction: 'pan-y',
         }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         {children}
       </div>
