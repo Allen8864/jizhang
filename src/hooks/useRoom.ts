@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSupabase } from './useSupabase'
-import type { Room, Profile, Transaction, Round, RoomHistory } from '@/types'
+import type { Room, Profile, Transaction, RoomHistory } from '@/types'
 
 interface RoomState {
   room: Room | null
   players: Profile[]
   transactions: Transaction[]
-  rounds: Round[]
+  currentRoundNum: number // Current round number, starting from 1
   currentPlayer: Profile | null
   loading: boolean
   error: string | null
@@ -21,12 +21,18 @@ export function useRoom(roomCode: string) {
     room: null,
     players: [],
     transactions: [],
-    rounds: [],
+    currentRoundNum: 1,
     currentPlayer: null,
     loading: true,
     error: null,
     isConnected: false,
   })
+
+  // Calculate current round number from transactions
+  const calculateCurrentRoundNum = useCallback((transactions: Transaction[]) => {
+    if (transactions.length === 0) return 1
+    return Math.max(...transactions.map(t => t.round_num))
+  }, [])
 
   // Initial data fetch
   useEffect(() => {
@@ -56,19 +62,20 @@ export function useRoom(roomCode: string) {
         if (!room) throw new Error('房间不存在')
 
         // Fetch all related data in parallel
-        const [profilesRes, transactionsRes, roundsRes] = await Promise.all([
+        const [profilesRes, transactionsRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('current_room_id', room.id),
           supabase.from('transactions').select('*').eq('room_id', room.id).order('created_at', { ascending: false }),
-          supabase.from('rounds').select('*').eq('room_id', room.id).order('index', { ascending: true }),
         ])
 
         const currentPlayer = profilesRes.data?.find(p => p.user_id === user.id) || null
+        const transactions = transactionsRes.data || []
+        const currentRoundNum = calculateCurrentRoundNum(transactions)
 
         setState({
           room,
           players: profilesRes.data || [],
-          transactions: transactionsRes.data || [],
-          rounds: roundsRes.data || [],
+          transactions,
+          currentRoundNum,
           currentPlayer,
           loading: false,
           error: null,
@@ -90,7 +97,7 @@ export function useRoom(roomCode: string) {
     }
 
     fetchRoomData()
-  }, [user, roomCode, supabase, authLoading])
+  }, [user, roomCode, supabase, authLoading, calculateCurrentRoundNum])
 
   // Realtime subscriptions
   useEffect(() => {
@@ -160,47 +167,27 @@ export function useRoom(roomCode: string) {
         (payload) => {
           setState(prev => {
             if (payload.eventType === 'INSERT') {
+              const newTx = payload.new as Transaction
               // Avoid duplicates and maintain order
-              if (prev.transactions.some(t => t.id === (payload.new as Transaction).id)) {
+              if (prev.transactions.some(t => t.id === newTx.id)) {
                 return prev
               }
+              const newTransactions = [newTx, ...prev.transactions]
               return {
                 ...prev,
-                transactions: [payload.new as Transaction, ...prev.transactions],
+                transactions: newTransactions,
+                currentRoundNum: Math.max(prev.currentRoundNum, newTx.round_num),
               }
             }
             if (payload.eventType === 'DELETE') {
+              const deletedId = (payload.old as { id: string }).id
+              const newTransactions = prev.transactions.filter(t => t.id !== deletedId)
               return {
                 ...prev,
-                transactions: prev.transactions.filter(t => t.id !== (payload.old as { id: string }).id),
-              }
-            }
-            return prev
-          })
-        }
-      )
-      .subscribe()
-
-    // Subscribe to rounds changes
-    const roundsChannel = supabase
-      .channel(`rounds:${roomId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'rounds', filter: `room_id=eq.${roomId}` },
-        (payload) => {
-          setState(prev => {
-            if (payload.eventType === 'INSERT') {
-              if (prev.rounds.some(r => r.id === (payload.new as Round).id)) {
-                return prev
-              }
-              return { ...prev, rounds: [...prev.rounds, payload.new as Round] }
-            }
-            if (payload.eventType === 'UPDATE') {
-              return {
-                ...prev,
-                rounds: prev.rounds.map(r =>
-                  r.id === (payload.new as Round).id ? payload.new as Round : r
-                ),
+                transactions: newTransactions,
+                currentRoundNum: newTransactions.length > 0
+                  ? Math.max(...newTransactions.map(t => t.round_num))
+                  : 1,
               }
             }
             return prev
@@ -212,7 +199,6 @@ export function useRoom(roomCode: string) {
     return () => {
       supabase.removeChannel(profilesChannel)
       supabase.removeChannel(transactionsChannel)
-      supabase.removeChannel(roundsChannel)
     }
   }, [state.room, user, supabase])
 
@@ -224,72 +210,32 @@ export function useRoom(roomCode: string) {
   ) => {
     if (!state.room || !user) throw new Error('未加入房间')
 
-    const currentRound = state.rounds.find(r => !r.ended_at)
-
     const { error } = await supabase.from('transactions').insert({
       room_id: state.room.id,
       from_user_id: fromUserId,
       to_user_id: toUserId,
       amount,
-      round_id: currentRound?.id || null,
+      round_num: state.currentRoundNum,
     })
 
     if (error) throw error
-  }, [state.room, state.rounds, user, supabase])
-
-  const deleteTransaction = useCallback(async (transactionId: string) => {
-    const { error } = await supabase
-      .from('transactions')
-      .delete()
-      .eq('id', transactionId)
-
-    if (error) throw error
-  }, [supabase])
+  }, [state.room, state.currentRoundNum, user, supabase])
 
   const startNewRound = useCallback(async () => {
     if (!state.room) throw new Error('未加入房间')
 
-    const nextIndex = state.rounds.length > 0
-      ? Math.max(...state.rounds.map(r => r.index)) + 1
-      : 1
-
-    // End current round if exists
-    const currentRound = state.rounds.find(r => !r.ended_at)
-    if (currentRound) {
-      await supabase
-        .from('rounds')
-        .update({ ended_at: new Date().toISOString() })
-        .eq('id', currentRound.id)
-    }
-
-    // Create new round
-    const { error } = await supabase.from('rounds').insert({
-      room_id: state.room.id,
-      index: nextIndex,
-      started_at: new Date().toISOString(),
-    })
-
-    if (error) throw error
-  }, [state.room, state.rounds, supabase])
-
-  const endCurrentRound = useCallback(async () => {
-    const currentRound = state.rounds.find(r => !r.ended_at)
-    if (!currentRound) return
-
-    const { error } = await supabase
-      .from('rounds')
-      .update({ ended_at: new Date().toISOString() })
-      .eq('id', currentRound.id)
-
-    if (error) throw error
-  }, [state.rounds, supabase])
+    // Simply increment the current round number
+    // The next transaction will use this new round number
+    setState(prev => ({
+      ...prev,
+      currentRoundNum: prev.currentRoundNum + 1,
+    }))
+  }, [state.room])
 
   return {
     ...state,
     addTransaction,
-    deleteTransaction,
     startNewRound,
-    endCurrentRound,
   }
 }
 

@@ -27,30 +27,29 @@ CREATE TABLE profiles (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Rounds table
-CREATE TABLE rounds (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    index INTEGER NOT NULL,
-    started_at TIMESTAMPTZ DEFAULT NOW(),
-    ended_at TIMESTAMPTZ,
-
-    -- Round index must be unique per room
-    UNIQUE(room_id, index)
-);
-
--- Transactions table
+-- Transactions table (room_id kept even after room is deleted for history reference)
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL, -- No foreign key constraint, keep after room deletion
     from_user_id UUID NOT NULL REFERENCES profiles(user_id),
     to_user_id UUID NOT NULL REFERENCES profiles(user_id),
     amount INTEGER NOT NULL CHECK (amount > 0), -- Stored in cents
-    round_id UUID REFERENCES rounds(id) ON DELETE SET NULL,
+    round_num INTEGER NOT NULL DEFAULT 1, -- Round number, starting from 1
     created_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Cannot pay yourself
     CONSTRAINT transactions_no_self_pay CHECK (from_user_id != to_user_id)
+);
+
+-- Settlement history table (snapshot of player balances when room is settled)
+CREATE TABLE settlement_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES profiles(user_id), -- The user who this history belongs to
+    room_id UUID NOT NULL, -- Keep room_id for reference (no FK, room may be deleted)
+    room_code VARCHAR(4) NOT NULL, -- Copy of room code at settlement time
+    settled_at TIMESTAMPTZ DEFAULT NOW(),
+    -- Player results snapshot (array of {name, emoji, balance})
+    player_results JSONB NOT NULL
 );
 
 -- ============================================
@@ -60,11 +59,13 @@ CREATE TABLE transactions (
 CREATE INDEX idx_rooms_code ON rooms(code);
 CREATE INDEX idx_profiles_current_room ON profiles(current_room_id);
 CREATE INDEX idx_transactions_room_id ON transactions(room_id);
-CREATE INDEX idx_transactions_round_id ON transactions(round_id);
+CREATE INDEX idx_transactions_round_num ON transactions(round_num);
 CREATE INDEX idx_transactions_created_at ON transactions(created_at DESC);
 CREATE INDEX idx_transactions_from_user ON transactions(from_user_id);
 CREATE INDEX idx_transactions_to_user ON transactions(to_user_id);
-CREATE INDEX idx_rounds_room_id ON rounds(room_id);
+CREATE INDEX idx_settlement_history_user_id ON settlement_history(user_id);
+CREATE INDEX idx_settlement_history_room_id ON settlement_history(room_id);
+CREATE INDEX idx_settlement_history_settled_at ON settlement_history(settled_at DESC);
 
 -- ============================================
 -- ROW LEVEL SECURITY
@@ -72,8 +73,8 @@ CREATE INDEX idx_rounds_room_id ON rounds(room_id);
 
 ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE settlement_history ENABLE ROW LEVEL SECURITY;
 
 -- Helper function: Get user's current room id (bypasses RLS)
 CREATE OR REPLACE FUNCTION get_user_room_id(user_uuid UUID)
@@ -125,6 +126,10 @@ CREATE POLICY "Anyone can lookup room by code" ON rooms
 CREATE POLICY "Room creator can update" ON rooms
     FOR UPDATE USING (created_by_user_id = auth.uid());
 
+-- Room members can delete room (for settlement)
+CREATE POLICY "Room members can delete rooms" ON rooms
+    FOR DELETE USING (is_room_member(id, auth.uid()));
+
 -- PROFILES POLICIES
 -- Users can view own profile
 CREATE POLICY "Users can view own profile" ON profiles
@@ -143,25 +148,6 @@ CREATE POLICY "Users can insert own profile" ON profiles
 CREATE POLICY "Users can update own profile" ON profiles
     FOR UPDATE USING (user_id = auth.uid());
 
--- ROUNDS POLICIES
--- Room members can create rounds
-CREATE POLICY "Room members can create rounds" ON rounds
-    FOR INSERT WITH CHECK (
-        is_room_member(room_id, auth.uid())
-    );
-
--- Room members can view rounds
-CREATE POLICY "Room members can view rounds" ON rounds
-    FOR SELECT USING (
-        is_room_member(room_id, auth.uid())
-    );
-
--- Room members can update rounds (end them)
-CREATE POLICY "Room members can update rounds" ON rounds
-    FOR UPDATE USING (
-        is_room_member(room_id, auth.uid())
-    );
-
 -- TRANSACTIONS POLICIES
 -- Room members can create transactions
 CREATE POLICY "Room members can create transactions" ON transactions
@@ -174,6 +160,21 @@ CREATE POLICY "Room members can view transactions" ON transactions
     FOR SELECT USING (
         is_room_member(room_id, auth.uid())
     );
+
+-- Users can view their own historical transactions (after room is deleted)
+CREATE POLICY "Users can view own historical transactions" ON transactions
+    FOR SELECT USING (
+        from_user_id = auth.uid() OR to_user_id = auth.uid()
+    );
+
+-- SETTLEMENT_HISTORY POLICIES
+-- Users can create their own history records
+CREATE POLICY "Users can create own history" ON settlement_history
+    FOR INSERT WITH CHECK (user_id = auth.uid());
+
+-- Users can view their own history
+CREATE POLICY "Users can view own history" ON settlement_history
+    FOR SELECT USING (user_id = auth.uid());
 
 -- ============================================
 -- REALTIME SUBSCRIPTIONS
@@ -190,11 +191,6 @@ BEGIN
     END;
     BEGIN
         ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
-    EXCEPTION WHEN duplicate_object THEN
-        NULL;
-    END;
-    BEGIN
-        ALTER PUBLICATION supabase_realtime ADD TABLE rounds;
     EXCEPTION WHEN duplicate_object THEN
         NULL;
     END;
@@ -240,14 +236,14 @@ CREATE TRIGGER rooms_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
 
--- Get next round index for a room
-CREATE OR REPLACE FUNCTION get_next_round_index(room_uuid UUID)
+-- Get current round number for a room (max round_num from transactions, or 1 if none)
+CREATE OR REPLACE FUNCTION get_current_round_num(room_uuid UUID)
 RETURNS INTEGER AS $$
 DECLARE
-    max_index INTEGER;
+    max_round INTEGER;
 BEGIN
-    SELECT COALESCE(MAX(index), 0) INTO max_index
-    FROM rounds WHERE room_id = room_uuid;
-    RETURN max_index + 1;
+    SELECT COALESCE(MAX(round_num), 1) INTO max_round
+    FROM transactions WHERE room_id = room_uuid;
+    RETURN max_round;
 END;
 $$ LANGUAGE plpgsql;

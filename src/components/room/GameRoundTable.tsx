@@ -1,13 +1,13 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { Profile, Transaction, Round } from '@/types'
+import type { Profile, Transaction } from '@/types'
 import { formatBalance } from '@/lib/settlement'
 
 interface GameRoundTableProps {
   players: Profile[]
   transactions: Transaction[]
-  rounds: Round[]
+  currentRoundNum: number
   currentUserId: string | null
 }
 
@@ -18,28 +18,30 @@ interface RoundPlayerAmount {
 export function GameRoundTable({
   players,
   transactions,
-  rounds,
+  currentRoundNum,
   currentUserId,
 }: GameRoundTableProps) {
   // Calculate net amount for each player in each round
   const roundData = useMemo(() => {
-    // Sort rounds by index
-    const sortedRounds = [...rounds].sort((a, b) => a.index - b.index)
+    // Get all unique round numbers from transactions
+    const roundNums = new Set(transactions.map(t => t.round_num))
 
-    // If no rounds exist, create a virtual "Round 1" with all zeros
-    if (sortedRounds.length === 0) {
+    // If no transactions, show current round (starting from 1)
+    if (roundNums.size === 0) {
       const emptyRound: RoundPlayerAmount = {}
       players.forEach(p => {
         emptyRound[p.user_id] = 0
       })
       return [{
-        roundIndex: 1,
-        roundId: null,
+        roundNum: currentRoundNum,
         amounts: emptyRound,
       }]
     }
 
-    return sortedRounds.map(round => {
+    // Sort round numbers
+    const sortedRoundNums = Array.from(roundNums).sort((a, b) => a - b)
+
+    return sortedRoundNums.map(roundNum => {
       const amounts: RoundPlayerAmount = {}
 
       // Initialize all players with 0
@@ -50,19 +52,18 @@ export function GameRoundTable({
       // Calculate net for each player in this round
       // Positive = winning (received money), Negative = losing (paid money)
       transactions
-        .filter(t => t.round_id === round.id)
+        .filter(t => t.round_num === roundNum)
         .forEach(t => {
           amounts[t.from_user_id] = (amounts[t.from_user_id] || 0) - t.amount
           amounts[t.to_user_id] = (amounts[t.to_user_id] || 0) + t.amount
         })
 
       return {
-        roundIndex: round.index,
-        roundId: round.id,
+        roundNum,
         amounts,
       }
     })
-  }, [rounds, transactions, players])
+  }, [transactions, players, currentRoundNum])
 
   if (players.length === 0) {
     return (
@@ -113,13 +114,13 @@ export function GameRoundTable({
 
           <tbody>
             {/* Round rows */}
-            {roundData.map((round, idx) => (
+            {roundData.map((round) => (
               <tr
-                key={round.roundId || `virtual-${idx}`}
+                key={`round-${round.roundNum}`}
                 className="border-b border-gray-50"
               >
                 <td className="sticky left-0 z-10 bg-white px-2 py-2 text-xs text-gray-400 text-center">
-                  {round.roundIndex}
+                  {round.roundNum}
                 </td>
                 {players.map(player => {
                   const amount = round.amounts[player.user_id] || 0

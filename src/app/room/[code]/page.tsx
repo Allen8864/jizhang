@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useRoom } from '@/hooks/useRoom'
 import { useSupabase } from '@/hooks/useSupabase'
@@ -29,7 +29,7 @@ export default function RoomPage() {
     room,
     players,
     transactions,
-    rounds,
+    currentRoundNum,
     currentPlayer,
     loading,
     error,
@@ -78,11 +78,6 @@ export default function RoomPage() {
       router.replace(`/room/${roomCode}`, { scroll: false })
     }
   }, [isNewlyCreated, room, loading, router, roomCode])
-
-  // Get current active round
-  const currentRound = useMemo(() => {
-    return rounds.find(r => !r.ended_at) || null
-  }, [rounds])
 
   // Handle join room - upsert profile with current_room_id
   const handleJoin = async (e: React.FormEvent) => {
@@ -291,14 +286,13 @@ export default function RoomPage() {
           <GameRoundTable
             players={players}
             transactions={transactions}
-            rounds={rounds}
+            currentRoundNum={currentRoundNum}
             currentUserId={currentPlayer?.user_id || null}
           />
         ) : (
           <TransactionList
             transactions={transactions}
             players={players}
-            rounds={rounds}
           />
         )}
       </main>
@@ -307,7 +301,7 @@ export default function RoomPage() {
       <ActionBar
         onSettlement={() => setShowSettlement(true)}
         onNewRound={handleNewRound}
-        currentRound={currentRound}
+        currentRoundNum={currentRoundNum}
         transactionCount={transactions.length}
       />
 

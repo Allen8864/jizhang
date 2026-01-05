@@ -2,46 +2,43 @@
 
 import { useMemo } from 'react'
 import { formatAmount } from '@/lib/settlement'
-import type { Transaction, Profile, Round } from '@/types'
+import type { Transaction, Profile } from '@/types'
 
 interface TransactionListProps {
   transactions: Transaction[]
   players: Profile[]
-  rounds: Round[]
 }
 
 export function TransactionList({
   transactions,
   players,
-  rounds,
 }: TransactionListProps) {
   // Create player lookup map by user_id
   const playerMap = useMemo(() => {
     return new Map(players.map(p => [p.user_id, p]))
   }, [players])
 
-  // Group transactions by round
+  // Group transactions by round_num
   const groupedTransactions = useMemo(() => {
-    const groups: { round: Round | null; transactions: Transaction[] }[] = []
+    const groups: { roundNum: number; transactions: Transaction[] }[] = []
 
     // Sort transactions by created_at descending
     const sorted = [...transactions].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
 
-    let currentRoundId: string | null | undefined = undefined
+    let currentRoundNum: number | undefined = undefined
 
     sorted.forEach(tx => {
-      if (tx.round_id !== currentRoundId) {
-        currentRoundId = tx.round_id
-        const round = tx.round_id ? rounds.find(r => r.id === tx.round_id) || null : null
-        groups.push({ round, transactions: [] })
+      if (tx.round_num !== currentRoundNum) {
+        currentRoundNum = tx.round_num
+        groups.push({ roundNum: tx.round_num, transactions: [] })
       }
       groups[groups.length - 1].transactions.push(tx)
     })
 
     return groups
-  }, [transactions, rounds])
+  }, [transactions])
 
   // Format time as HH:MM
   const formatTime = (dateStr: string) => {
@@ -67,15 +64,13 @@ export function TransactionList({
       {groupedTransactions.map((group, groupIndex) => (
         <div key={groupIndex}>
           {/* Round header */}
-          {group.round && (
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-px bg-gray-200 flex-1" />
-              <span className="text-xs text-gray-400 px-2">
-                第 {group.round.index} 轮
-              </span>
-              <div className="h-px bg-gray-200 flex-1" />
-            </div>
-          )}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-xs text-gray-400 px-2">
+              第 {group.roundNum} 轮
+            </span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
 
           {/* Transactions in this group */}
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-50">

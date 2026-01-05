@@ -1,19 +1,18 @@
 'use client'
 
 import { Button } from '@/components/ui/Button'
-import type { Round } from '@/types'
 
 interface ActionBarProps {
   onSettlement: () => void
   onNewRound: () => void
-  currentRound: Round | null
+  currentRoundNum: number
   transactionCount: number
 }
 
 export function ActionBar({
   onSettlement,
   onNewRound,
-  currentRound,
+  currentRoundNum,
   transactionCount,
 }: ActionBarProps) {
   return (
@@ -26,7 +25,7 @@ export function ActionBar({
           onClick={onNewRound}
           className="flex-1 text-gray-500"
         >
-          {currentRound ? `第${currentRound.index}轮` : '新一轮'}
+          第{currentRoundNum}轮
         </Button>
 
         {/* Settlement Button */}

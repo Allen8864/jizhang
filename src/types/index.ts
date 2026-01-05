@@ -20,21 +20,13 @@ export interface Profile {
 // Alias for backward compatibility during migration
 export type Player = Profile
 
-export interface Round {
-  id: string
-  room_id: string
-  index: number
-  started_at: string
-  ended_at: string | null
-}
-
 export interface Transaction {
   id: string
   room_id: string
   from_user_id: string
   to_user_id: string
   amount: number // in cents
-  round_id: string | null
+  round_num: number // Round number, starting from 1
   created_at: string
 }
 
@@ -57,6 +49,23 @@ export interface RoomHistory {
   code: string
   playerName?: string
   lastVisited: string
+}
+
+// Player result in settlement history (snapshot, no IDs)
+export interface PlayerResult {
+  name: string
+  emoji: string
+  balance: number // positive = winning, negative = losing
+}
+
+// Settlement history record
+export interface SettlementHistory {
+  id: string
+  user_id: string
+  room_id: string
+  room_code: string
+  settled_at: string
+  player_results: PlayerResult[]
 }
 
 // 随机昵称列表（麻将/扑克风格）
