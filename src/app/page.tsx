@@ -72,16 +72,10 @@ export default function HomePage() {
     }
   }, [user, supabase, authLoading])
 
-  // Save profile
-  const handleSaveProfile = (newEmoji: string, newNickname: string) => {
+  // Handle profile save success - update local state for immediate UI update
+  const handleProfileSuccess = (newEmoji: string, newNickname: string) => {
     setEmoji(newEmoji)
     setNickname(newNickname)
-    try {
-      localStorage.setItem('jizhang_emoji', newEmoji)
-      localStorage.setItem('jizhang_nickname', newNickname)
-    } catch (e) {
-      // Ignore
-    }
   }
 
   // Create room
@@ -237,7 +231,7 @@ export default function HomePage() {
         onClose={() => setShowProfileEditor(false)}
         emoji={emoji}
         nickname={nickname}
-        onSave={handleSaveProfile}
+        onSuccess={handleProfileSuccess}
       />
 
       <JoinRoomModal

@@ -5,13 +5,14 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { EmojiPicker } from '@/components/ui/EmojiPicker'
+import { useSupabase } from '@/hooks/useSupabase'
 
 interface ProfileEditorProps {
   isOpen: boolean
   onClose: () => void
   emoji: string
   nickname: string
-  onSave: (emoji: string, nickname: string) => void
+  onSuccess?: (emoji: string, nickname: string) => void
 }
 
 export function ProfileEditor({
@@ -19,10 +20,12 @@ export function ProfileEditor({
   onClose,
   emoji,
   nickname,
-  onSave,
+  onSuccess,
 }: ProfileEditorProps) {
+  const { user, supabase } = useSupabase()
   const [editEmoji, setEditEmoji] = useState(emoji)
   const [editNickname, setEditNickname] = useState(nickname)
+  const [saving, setSaving] = useState(false)
 
   // Reset when modal opens
   useEffect(() => {
@@ -32,10 +35,49 @@ export function ProfileEditor({
     }
   }, [isOpen, emoji, nickname])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editNickname.trim()) return
-    onSave(editEmoji, editNickname.trim())
-    onClose()
+
+    const trimmedNickname = editNickname.trim()
+    setSaving(true)
+
+    try {
+      // Save to database if user exists
+      if (user && supabase) {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: user.id,
+            name: trimmedNickname,
+            avatar_emoji: editEmoji,
+          }, {
+            onConflict: 'user_id',
+          })
+
+        if (error) {
+          console.error('Profile save error:', error)
+          alert('保存失败，请重试')
+          return
+        }
+      }
+
+      // Save to localStorage
+      try {
+        localStorage.setItem('jizhang_emoji', editEmoji)
+        localStorage.setItem('jizhang_nickname', trimmedNickname)
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+
+      // Notify parent of success
+      onSuccess?.(editEmoji, trimmedNickname)
+      onClose()
+    } catch (err) {
+      console.error('Profile save error:', err)
+      alert('保存失败，请重试')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -65,7 +107,8 @@ export function ProfileEditor({
           className="w-full"
           size="lg"
           onClick={handleSave}
-          disabled={!editNickname.trim()}
+          disabled={!editNickname.trim() || saving}
+          loading={saving}
         >
           保存
         </Button>

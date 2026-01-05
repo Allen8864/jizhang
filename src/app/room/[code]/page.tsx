@@ -145,27 +145,6 @@ export default function RoomPage() {
     }
   }, [startNewRound])
 
-  // Handle profile update
-  const handleProfileSave = useCallback(async (emoji: string, newNickname: string) => {
-    if (!currentPlayer) return
-
-    try {
-      await supabase
-        .from('profiles')
-        .update({ avatar_emoji: emoji, name: newNickname })
-        .eq('user_id', currentPlayer.user_id)
-
-      // Save nickname preference
-      try {
-        localStorage.setItem('jizhang_nickname', newNickname)
-      } catch (e) {
-        // Ignore
-      }
-    } catch (err) {
-      console.error('Profile update error:', err)
-    }
-  }, [currentPlayer, supabase])
-
   // Loading state
   if (loading || authLoading) {
     return (
@@ -340,7 +319,6 @@ export default function RoomPage() {
           onClose={() => setShowProfileEditor(false)}
           emoji={currentPlayer.avatar_emoji}
           nickname={currentPlayer.name}
-          onSave={handleProfileSave}
         />
       )}
     </div>
