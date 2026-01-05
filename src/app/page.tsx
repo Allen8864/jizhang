@@ -19,26 +19,58 @@ export default function HomePage() {
   const [showJoinRoom, setShowJoinRoom] = useState(false)
   const [creating, setCreating] = useState(false)
 
-  // Load saved profile or generate random
+  // Load saved profile from database, fallback to localStorage, then random
   useEffect(() => {
-    try {
-      const savedEmoji = localStorage.getItem('jizhang_emoji')
-      const savedNickname = localStorage.getItem('jizhang_nickname')
-      if (savedEmoji) {
-        setEmoji(savedEmoji)
-      } else {
-        setEmoji(getRandomEmoji())
+    const loadProfile = async () => {
+      // First try to load from database if user is available
+      if (user && supabase) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('name, avatar_emoji')
+            .eq('user_id', user.id)
+            .single()
+
+          if (profile) {
+            if (profile.avatar_emoji) {
+              setEmoji(profile.avatar_emoji)
+              localStorage.setItem('jizhang_emoji', profile.avatar_emoji)
+            }
+            if (profile.name) {
+              setNickname(profile.name)
+              localStorage.setItem('jizhang_nickname', profile.name)
+            }
+            return
+          }
+        } catch (e) {
+          // Profile not found in database, continue with localStorage/random
+        }
       }
-      if (savedNickname) {
-        setNickname(savedNickname)
-      } else {
+
+      // Fallback to localStorage or random
+      try {
+        const savedEmoji = localStorage.getItem('jizhang_emoji')
+        const savedNickname = localStorage.getItem('jizhang_nickname')
+        if (savedEmoji) {
+          setEmoji(savedEmoji)
+        } else {
+          setEmoji(getRandomEmoji())
+        }
+        if (savedNickname) {
+          setNickname(savedNickname)
+        } else {
+          setNickname(getRandomNickname())
+        }
+      } catch (e) {
+        setEmoji(getRandomEmoji())
         setNickname(getRandomNickname())
       }
-    } catch (e) {
-      setEmoji(getRandomEmoji())
-      setNickname(getRandomNickname())
     }
-  }, [])
+
+    if (!authLoading) {
+      loadProfile()
+    }
+  }, [user, supabase, authLoading])
 
   // Save profile
   const handleSaveProfile = (newEmoji: string, newNickname: string) => {

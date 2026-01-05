@@ -57,6 +57,7 @@ export function SettlementView({
       const playerResults: PlayerResult[] = players.map(p => {
         const balance = balances.find(b => b.userId === p.user_id)?.balance || 0
         return {
+          user_id: p.user_id,
           name: p.name,
           emoji: p.avatar_emoji,
           balance,

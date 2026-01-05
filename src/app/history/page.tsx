@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/hooks/useSupabase'
 import { formatAmount } from '@/lib/settlement'
@@ -12,6 +12,36 @@ export default function HistoryPage() {
   const [history, setHistory] = useState<SettlementHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Calculate stats from history
+  const stats = useMemo(() => {
+    if (!user || history.length === 0) {
+      return { wins: 0, losses: 0, winRate: 0, totalProfit: 0 }
+    }
+
+    let wins = 0
+    let losses = 0
+    let totalProfit = 0
+
+    history.forEach(record => {
+      // Find current user's result in this game
+      const myResult = record.player_results.find(p => p.user_id === user.id)
+      if (myResult) {
+        totalProfit += myResult.balance
+        if (myResult.balance > 0) {
+          wins++
+        } else if (myResult.balance < 0) {
+          losses++
+        }
+        // balance === 0 is neither win nor loss
+      }
+    })
+
+    const totalGames = wins + losses
+    const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0
+
+    return { wins, losses, winRate, totalProfit }
+  }, [history, user])
 
   // Fetch settlement history
   useEffect(() => {
@@ -88,6 +118,38 @@ export default function HistoryPage() {
 
       {/* Content */}
       <main className="max-w-md mx-auto px-4 py-4">
+        {/* Stats Panel */}
+        {history.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-100 p-4 mb-4">
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div>
+                <div className="text-2xl font-bold text-green-600">{stats.wins}</div>
+                <div className="text-xs text-gray-500">赢</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-red-600">{stats.losses}</div>
+                <div className="text-xs text-gray-500">输</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-900">{stats.winRate}%</div>
+                <div className="text-xs text-gray-500">胜率</div>
+              </div>
+              <div>
+                <div className={`text-2xl font-bold ${
+                  stats.totalProfit > 0
+                    ? 'text-green-600'
+                    : stats.totalProfit < 0
+                    ? 'text-red-600'
+                    : 'text-gray-400'
+                }`}>
+                  {stats.totalProfit > 0 ? '+' : ''}{formatAmount(stats.totalProfit)}
+                </div>
+                <div className="text-xs text-gray-500">总盈亏</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {history.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

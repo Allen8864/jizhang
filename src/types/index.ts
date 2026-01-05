@@ -51,8 +51,9 @@ export interface RoomHistory {
   lastVisited: string
 }
 
-// Player result in settlement history (snapshot, no IDs)
+// Player result in settlement history (snapshot with user_id for identification)
 export interface PlayerResult {
+  user_id: string
   name: string
   emoji: string
   balance: number // positive = winning, negative = losing
