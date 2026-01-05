@@ -1,5 +1,5 @@
 -- 记账 (Jizhang) - Card Game/Mahjong Accounting System
--- Complete Database Schema
+-- Complete Database Schema (Merged from all migrations)
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -13,6 +13,9 @@ CREATE TABLE rooms (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     code VARCHAR(4) UNIQUE NOT NULL,
     created_by_user_id UUID NOT NULL,
+    current_round INTEGER NOT NULL DEFAULT 1,
+    countdown_seconds INTEGER DEFAULT NULL,
+    countdown_end_at TIMESTAMPTZ DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -68,6 +71,13 @@ CREATE INDEX idx_settlement_history_room_id ON settlement_history(room_id);
 CREATE INDEX idx_settlement_history_settled_at ON settlement_history(settled_at DESC);
 
 -- ============================================
+-- REPLICA IDENTITY (for realtime full row data)
+-- ============================================
+
+ALTER TABLE rooms REPLICA IDENTITY FULL;
+ALTER TABLE profiles REPLICA IDENTITY FULL;
+
+-- ============================================
 -- ROW LEVEL SECURITY
 -- ============================================
 
@@ -112,19 +122,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE POLICY "Anyone can create rooms" ON rooms
     FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
--- Room members and creator can view the room
-CREATE POLICY "Room members can view rooms" ON rooms
-    FOR SELECT USING (
-        is_room_member(id, auth.uid()) OR created_by_user_id = auth.uid()
-    );
-
 -- Anyone can view a room by code (for joining)
 CREATE POLICY "Anyone can lookup room by code" ON rooms
     FOR SELECT USING (true);
 
--- Only creator can update room
-CREATE POLICY "Room creator can update" ON rooms
-    FOR UPDATE USING (created_by_user_id = auth.uid());
+-- Room members can update room settings
+CREATE POLICY "Room members can update" ON rooms
+    FOR UPDATE USING (is_room_member(id, auth.uid()));
 
 -- Room members can delete room (for settlement)
 CREATE POLICY "Room members can delete rooms" ON rooms
@@ -168,9 +172,18 @@ CREATE POLICY "Users can view own historical transactions" ON transactions
     );
 
 -- SETTLEMENT_HISTORY POLICIES
--- Users can create their own history records
-CREATE POLICY "Users can create own history" ON settlement_history
-    FOR INSERT WITH CHECK (user_id = auth.uid());
+-- Users can create history records for all players in the same room
+CREATE POLICY "Users can create history for room members" ON settlement_history
+    FOR INSERT WITH CHECK (
+        -- The target user must be in the same room as the current user
+        EXISTS (
+            SELECT 1 FROM profiles p1, profiles p2
+            WHERE p1.user_id = auth.uid()
+              AND p2.user_id = settlement_history.user_id
+              AND p1.current_room_id IS NOT NULL
+              AND p1.current_room_id = p2.current_room_id
+        )
+    );
 
 -- Users can view their own history
 CREATE POLICY "Users can view own history" ON settlement_history
