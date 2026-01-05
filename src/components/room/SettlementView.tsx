@@ -64,15 +64,17 @@ export function SettlementView({
         }
       })
 
-      // Create history record for current user
+      // Create history records for all players in the room
+      const historyRecords = players.map(p => ({
+        user_id: p.user_id,
+        room_id: room.id,
+        room_code: room.code,
+        player_results: playerResults,
+      }))
+
       const { error: historyError } = await supabase
         .from('settlement_history')
-        .insert({
-          user_id: user.id,
-          room_id: room.id,
-          room_code: room.code,
-          player_results: playerResults,
-        })
+        .insert(historyRecords)
 
       if (historyError) {
         throw historyError
