@@ -5,6 +5,8 @@ export interface Room {
   code: string
   created_by_user_id: string
   current_round: number // Current round number, starting from 1
+  countdown_seconds: number | null // Countdown duration in seconds (null = disabled)
+  countdown_end_at: string | null // ISO timestamp when countdown ends (null = no active countdown)
   created_at: string
   updated_at: string
 }

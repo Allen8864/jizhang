@@ -37,6 +37,10 @@ export default function RoomPage() {
     isConnected,
     addTransaction,
     startNewRound,
+    cancelCountdown,
+    setCountdownSeconds,
+    countdownRemaining,
+    isCountdownWarning,
   } = useRoom(roomCode)
 
   const [showTransactionForm, setShowTransactionForm] = useState(false)
@@ -282,6 +286,9 @@ export default function RoomPage() {
       <ActionBar
         onNewRound={handleNewRound}
         currentRoundNum={currentRoundNum}
+        countdown={countdownRemaining}
+        isWarning={isCountdownWarning}
+        onCancelCountdown={cancelCountdown}
       />
 
       {/* Transaction form modal */}
@@ -329,6 +336,7 @@ export default function RoomPage() {
         room={room}
         transactions={transactions}
         onOpenSettlement={() => setShowSettlement(true)}
+        onSetCountdownSeconds={setCountdownSeconds}
       />
     </div>
   )

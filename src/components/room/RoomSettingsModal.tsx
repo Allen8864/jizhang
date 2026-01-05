@@ -15,6 +15,22 @@ interface RoomSettingsModalProps {
   room: Room
   transactions: Transaction[]
   onOpenSettlement: () => void
+  onSetCountdownSeconds: (seconds: number | null) => Promise<void>
+}
+
+// Convert countdown_seconds to TimerOption
+function getTimerOption(countdownSeconds: number | null): TimerOption {
+  if (countdownSeconds === null) return 'manual'
+  if (countdownSeconds === 30) return '30'
+  if (countdownSeconds === 60) return '60'
+  if (countdownSeconds === 90) return '90'
+  return 'manual'
+}
+
+// Convert TimerOption to countdown_seconds
+function getCountdownSeconds(timerOption: TimerOption): number | null {
+  if (timerOption === 'manual') return null
+  return parseInt(timerOption, 10)
 }
 
 export function RoomSettingsModal({
@@ -23,12 +39,15 @@ export function RoomSettingsModal({
   room,
   transactions,
   onOpenSettlement,
+  onSetCountdownSeconds,
 }: RoomSettingsModalProps) {
   const router = useRouter()
   const { user, supabase } = useSupabase()
-  const [timerOption, setTimerOption] = useState<TimerOption>('90')
   const [leaving, setLeaving] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+
+  // Derive timer option from room.countdown_seconds
+  const timerOption = getTimerOption(room.countdown_seconds)
 
   const timerOptions: { value: TimerOption; label: string }[] = [
     { value: 'manual', label: '手动' },
@@ -36,6 +55,11 @@ export function RoomSettingsModal({
     { value: '60', label: '60秒' },
     { value: '90', label: '90秒' },
   ]
+
+  const handleTimerChange = async (option: TimerOption) => {
+    const seconds = getCountdownSeconds(option)
+    await onSetCountdownSeconds(seconds)
+  }
 
   const handleLeaveRoom = async () => {
     if (!user) return
@@ -91,7 +115,7 @@ export function RoomSettingsModal({
                   name="timer"
                   value={option.value}
                   checked={timerOption === option.value}
-                  onChange={() => setTimerOption(option.value)}
+                  onChange={() => handleTimerChange(option.value)}
                   className="sr-only"
                 />
                 <span className={`font-medium ${

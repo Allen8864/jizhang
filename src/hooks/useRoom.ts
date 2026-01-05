@@ -1,8 +1,18 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSupabase } from './useSupabase'
 import type { Room, Profile, Transaction, RoomHistory } from '@/types'
+
+// Warning threshold - show countdown warning when remaining time <= this value
+const COUNTDOWN_WARNING_THRESHOLD = 30
+
+// Helper function to calculate remaining countdown seconds
+function calculateCountdownRemaining(countdownEndAt: string | null): number | null {
+  if (!countdownEndAt) return null
+  const remaining = Math.ceil((new Date(countdownEndAt).getTime() - Date.now()) / 1000)
+  return remaining > 0 ? remaining : null
+}
 
 interface RoomState {
   room: Room | null
@@ -13,6 +23,9 @@ interface RoomState {
   loading: boolean
   error: string | null
   isConnected: boolean
+  // Countdown state (derived from room.countdown_end_at)
+  countdownRemaining: number | null // Remaining seconds, null if no countdown
+  isCountdownWarning: boolean // true when remaining <= 30s
 }
 
 export function useRoom(roomCode: string) {
@@ -26,7 +39,10 @@ export function useRoom(roomCode: string) {
     loading: true,
     error: null,
     isConnected: false,
+    countdownRemaining: null,
+    isCountdownWarning: false,
   })
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null)
 
 
   // Initial data fetch
@@ -65,6 +81,9 @@ export function useRoom(roomCode: string) {
         const currentPlayer = profilesRes.data?.find(p => p.user_id === user.id) || null
         const transactions = transactionsRes.data || []
 
+        // Calculate initial countdown remaining
+        const countdownRemaining = calculateCountdownRemaining(room.countdown_end_at)
+
         setState({
           room,
           players: profilesRes.data || [],
@@ -74,6 +93,8 @@ export function useRoom(roomCode: string) {
           loading: false,
           error: null,
           isConnected: true,
+          countdownRemaining,
+          isCountdownWarning: countdownRemaining !== null && countdownRemaining <= COUNTDOWN_WARNING_THRESHOLD,
         })
 
         // Save to localStorage for history restoration
@@ -152,7 +173,7 @@ export function useRoom(roomCode: string) {
         setState(prev => ({ ...prev, isConnected: status === 'SUBSCRIBED' }))
       })
 
-    // Subscribe to room changes (for current_round updates)
+    // Subscribe to room changes (for current_round and countdown updates)
     const roomChannel = supabase
       .channel(`room:${roomId}`)
       .on(
@@ -160,10 +181,13 @@ export function useRoom(roomCode: string) {
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
         (payload) => {
           const updatedRoom = payload.new as Room
+          const countdownRemaining = calculateCountdownRemaining(updatedRoom.countdown_end_at)
           setState(prev => ({
             ...prev,
             room: updatedRoom,
             currentRoundNum: updatedRoom.current_round,
+            countdownRemaining,
+            isCountdownWarning: countdownRemaining !== null && countdownRemaining <= COUNTDOWN_WARNING_THRESHOLD,
           }))
         }
       )
@@ -210,6 +234,75 @@ export function useRoom(roomCode: string) {
     }
   }, [state.room, user, supabase])
 
+  // Countdown timer effect - updates local countdown display every second
+  useEffect(() => {
+    // Clear any existing timer
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current)
+      countdownTimerRef.current = null
+    }
+
+    // Only start timer if there's an active countdown
+    if (!state.room?.countdown_end_at) {
+      setState(prev => ({
+        ...prev,
+        countdownRemaining: null,
+        isCountdownWarning: false,
+      }))
+      return
+    }
+
+    // Update countdown every second
+    const updateCountdown = () => {
+      const remaining = calculateCountdownRemaining(state.room?.countdown_end_at || null)
+      setState(prev => ({
+        ...prev,
+        countdownRemaining: remaining,
+        isCountdownWarning: remaining !== null && remaining <= COUNTDOWN_WARNING_THRESHOLD,
+      }))
+
+      // If countdown reached 0, trigger next round
+      if (remaining === null && state.room?.countdown_end_at) {
+        // Countdown finished - the server should handle advancing the round
+        // but we can trigger it from here as well for responsiveness
+        startNewRoundInternal()
+      }
+    }
+
+    // Initial update
+    updateCountdown()
+
+    // Start interval
+    countdownTimerRef.current = setInterval(updateCountdown, 1000)
+
+    return () => {
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current)
+        countdownTimerRef.current = null
+      }
+    }
+  }, [state.room?.countdown_end_at])
+
+  // Internal function to start new round (used by countdown timer)
+  const startNewRoundInternal = useCallback(async () => {
+    if (!state.room) return
+
+    const newRoundNum = state.currentRoundNum + 1
+
+    try {
+      // Update round number and clear countdown
+      await supabase
+        .from('rooms')
+        .update({
+          current_round: newRoundNum,
+          countdown_end_at: null,
+        })
+        .eq('id', state.room.id)
+    } catch (err) {
+      console.error('Failed to advance round:', err)
+    }
+  }, [state.room, state.currentRoundNum, supabase])
+
   // Actions
   const addTransaction = useCallback(async (
     fromUserId: string,
@@ -218,7 +311,8 @@ export function useRoom(roomCode: string) {
   ) => {
     if (!state.room || !user) throw new Error('未加入房间')
 
-    const { error } = await supabase.from('transactions').insert({
+    // Insert transaction
+    const { error: txError } = await supabase.from('transactions').insert({
       room_id: state.room.id,
       from_user_id: fromUserId,
       to_user_id: toUserId,
@@ -226,7 +320,16 @@ export function useRoom(roomCode: string) {
       round_num: state.currentRoundNum,
     })
 
-    if (error) throw error
+    if (txError) throw txError
+
+    // If countdown is enabled, reset/start the countdown
+    if (state.room.countdown_seconds) {
+      const newEndAt = new Date(Date.now() + state.room.countdown_seconds * 1000).toISOString()
+      await supabase
+        .from('rooms')
+        .update({ countdown_end_at: newEndAt })
+        .eq('id', state.room.id)
+    }
   }, [state.room, state.currentRoundNum, user, supabase])
 
   const startNewRound = useCallback(async () => {
@@ -234,10 +337,13 @@ export function useRoom(roomCode: string) {
 
     const newRoundNum = state.currentRoundNum + 1
 
-    // Update the round number in the database
+    // Update the round number and clear countdown
     const { error } = await supabase
       .from('rooms')
-      .update({ current_round: newRoundNum })
+      .update({
+        current_round: newRoundNum,
+        countdown_end_at: null, // Clear countdown when manually advancing
+      })
       .eq('id', state.room.id)
 
     if (error) throw error
@@ -246,13 +352,46 @@ export function useRoom(roomCode: string) {
     setState(prev => ({
       ...prev,
       currentRoundNum: newRoundNum,
+      countdownRemaining: null,
+      isCountdownWarning: false,
     }))
   }, [state.room, state.currentRoundNum, supabase])
+
+  // Cancel countdown without advancing round
+  const cancelCountdown = useCallback(async () => {
+    if (!state.room) return
+
+    await supabase
+      .from('rooms')
+      .update({ countdown_end_at: null })
+      .eq('id', state.room.id)
+
+    setState(prev => ({
+      ...prev,
+      countdownRemaining: null,
+      isCountdownWarning: false,
+    }))
+  }, [state.room, supabase])
+
+  // Update countdown settings
+  const setCountdownSeconds = useCallback(async (seconds: number | null) => {
+    if (!state.room) return
+
+    await supabase
+      .from('rooms')
+      .update({
+        countdown_seconds: seconds,
+        countdown_end_at: null, // Clear any active countdown when changing settings
+      })
+      .eq('id', state.room.id)
+  }, [state.room, supabase])
 
   return {
     ...state,
     addTransaction,
     startNewRound,
+    cancelCountdown,
+    setCountdownSeconds,
   }
 }
 
