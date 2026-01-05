@@ -137,7 +137,7 @@ export function SettlementView({
         {settlements.length > 0 ? (
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-3">
-              结算方案 <span className="font-normal">({settlements.length}笔转账)</span>
+              结算方案
             </h3>
             <div className="space-y-2">
               {settlements.map((transfer, index) => {
@@ -178,10 +178,6 @@ export function SettlementView({
           </div>
         )}
 
-        <p className="text-xs text-gray-400 text-center">
-          以上为最少转账次数的结算方案
-        </p>
-
         {error && (
           <p className="text-red-500 text-sm text-center">{error}</p>
         )}
@@ -196,10 +192,6 @@ export function SettlementView({
         >
           确认结算并关闭房间
         </Button>
-
-        <p className="text-xs text-gray-400 text-center">
-          结算后房间将关闭，记录会保存到历史
-        </p>
       </div>
     </Modal>
   )
