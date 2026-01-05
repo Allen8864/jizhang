@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/Modal'
 import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
+import { PullToRefresh } from '@/components/ui/PullToRefresh'
 import { getRandomNickname, getRandomEmoji, type Profile } from '@/types'
 
 export default function RoomPage() {
@@ -42,6 +43,7 @@ export default function RoomPage() {
     setCountdownSeconds,
     countdownRemaining,
     isCountdownWarning,
+    refetch,
   } = useRoom(roomCode)
 
   const [showTransactionForm, setShowTransactionForm] = useState(false)
@@ -275,23 +277,25 @@ export default function RoomPage() {
         </div>
       </div>
 
-      {/* Scrollable content area */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 pb-24 max-w-md mx-auto w-full">
-        {/* Tab content */}
-        {activeTab === 'game' ? (
-          <GameRoundTable
-            players={players}
-            transactions={transactions}
-            currentRoundNum={currentRoundNum}
-            currentUserId={currentPlayer?.user_id || null}
-          />
-        ) : (
-          <TransactionList
-            transactions={transactions}
-            players={players}
-          />
-        )}
-      </main>
+      {/* Scrollable content area with pull-to-refresh */}
+      <PullToRefresh onRefresh={refetch} className="flex-1 overflow-hidden">
+        <main className="px-4 py-4 pb-24 max-w-md mx-auto w-full">
+          {/* Tab content */}
+          {activeTab === 'game' ? (
+            <GameRoundTable
+              players={players}
+              transactions={transactions}
+              currentRoundNum={currentRoundNum}
+              currentUserId={currentPlayer?.user_id || null}
+            />
+          ) : (
+            <TransactionList
+              transactions={transactions}
+              players={players}
+            />
+          )}
+        </main>
+      </PullToRefresh>
 
       {/* Action bar */}
       <ActionBar

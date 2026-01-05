@@ -315,6 +315,35 @@ export function useRoom(roomCode: string) {
     }
   }, [state.room, state.currentRoundNum, supabase])
 
+  // Refetch room data (for pull-to-refresh)
+  const refetch = useCallback(async () => {
+    if (!state.room || !user) return
+
+    try {
+      const [profilesRes, transactionsRes, roomRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('current_room_id', state.room.id),
+        supabase.from('transactions').select('*').eq('room_id', state.room.id).order('created_at', { ascending: false }),
+        supabase.from('rooms').select('*').eq('id', state.room.id).single(),
+      ])
+
+      const currentPlayer = profilesRes.data?.find(p => p.user_id === user.id) || null
+      const countdownRemaining = roomRes.data ? calculateCountdownRemaining(roomRes.data.countdown_end_at) : null
+
+      setState(prev => ({
+        ...prev,
+        room: roomRes.data || prev.room,
+        players: profilesRes.data || prev.players,
+        transactions: transactionsRes.data || prev.transactions,
+        currentRoundNum: roomRes.data?.current_round || prev.currentRoundNum,
+        currentPlayer,
+        countdownRemaining,
+        isCountdownWarning: countdownRemaining !== null && countdownRemaining <= COUNTDOWN_WARNING_THRESHOLD,
+      }))
+    } catch (err) {
+      console.error('Refetch error:', err)
+    }
+  }, [state.room, user, supabase])
+
   // Actions
   const addTransaction = useCallback(async (
     fromUserId: string,
@@ -404,6 +433,7 @@ export function useRoom(roomCode: string) {
     startNewRound,
     cancelCountdown,
     setCountdownSeconds,
+    refetch,
   }
 }
 
