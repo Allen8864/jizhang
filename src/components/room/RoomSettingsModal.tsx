@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useSupabase } from '@/hooks/useSupabase'
-import type { Room } from '@/types'
+import type { Room, Transaction } from '@/types'
 
 type TimerOption = 'manual' | '30' | '60' | '90'
 
@@ -13,6 +13,7 @@ interface RoomSettingsModalProps {
   isOpen: boolean
   onClose: () => void
   room: Room
+  transactions: Transaction[]
   onOpenSettlement: () => void
 }
 
@@ -20,12 +21,14 @@ export function RoomSettingsModal({
   isOpen,
   onClose,
   room,
+  transactions,
   onOpenSettlement,
 }: RoomSettingsModalProps) {
   const router = useRouter()
   const { user, supabase } = useSupabase()
   const [timerOption, setTimerOption] = useState<TimerOption>('90')
   const [leaving, setLeaving] = useState(false)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   const timerOptions: { value: TimerOption; label: string }[] = [
     { value: 'manual', label: '手动' },
@@ -111,6 +114,7 @@ export function RoomSettingsModal({
             size="lg"
             className="w-full"
             onClick={handleSettlement}
+            disabled={transactions.length === 0}
           >
             结算
           </Button>
@@ -119,13 +123,38 @@ export function RoomSettingsModal({
             variant="ghost"
             size="lg"
             className="w-full text-red-600 hover:bg-red-50"
-            onClick={handleLeaveRoom}
-            loading={leaving}
+            onClick={() => setShowLeaveConfirm(true)}
           >
             退出房间
           </Button>
         </div>
       </div>
+
+      {/* Leave Confirm Modal */}
+      <Modal
+        isOpen={showLeaveConfirm}
+        onClose={() => setShowLeaveConfirm(false)}
+        title="退出房间"
+      >
+        <p className="text-gray-600 mb-6">确定要退出房间吗？</p>
+        <div className="flex gap-3">
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={() => setShowLeaveConfirm(false)}
+          >
+            取消
+          </Button>
+          <Button
+            variant="danger"
+            className="flex-1"
+            onClick={handleLeaveRoom}
+            loading={leaving}
+          >
+            确认退出
+          </Button>
+        </div>
+      </Modal>
     </Modal>
   )
 }

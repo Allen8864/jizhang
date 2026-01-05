@@ -327,6 +327,7 @@ export default function RoomPage() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         room={room}
+        transactions={transactions}
         onOpenSettlement={() => setShowSettlement(true)}
       />
     </div>
