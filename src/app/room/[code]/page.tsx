@@ -66,9 +66,24 @@ export default function RoomPage() {
         // Check if user already has a profile
         const { data: existingProfile } = await supabase
           .from('profiles')
-          .select('name, avatar_emoji')
+          .select('name, avatar_emoji, current_room_id')
           .eq('user_id', user.id)
           .single()
+
+        // If user is already in a different room, redirect to that room
+        if (existingProfile?.current_room_id && existingProfile.current_room_id !== room.id) {
+          const { data: currentRoom } = await supabase
+            .from('rooms')
+            .select('code')
+            .eq('id', existingProfile.current_room_id)
+            .single()
+
+          if (currentRoom) {
+            alert(`你已在房间 ${currentRoom.code} 中，正在跳转...`)
+            router.push(`/room/${currentRoom.code}`)
+            return
+          }
+        }
 
         const isFirstTimeUser = !existingProfile
 
@@ -119,7 +134,7 @@ export default function RoomPage() {
     }
 
     autoJoin()
-  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase, roomCode])
+  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase, roomCode, router])
 
   // Show share modal if room was just created
   useEffect(() => {

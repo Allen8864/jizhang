@@ -20,6 +20,7 @@ export default function HomePage() {
   const [creating, setCreating] = useState(false)
 
   // Load saved profile from database, fallback to localStorage, then random
+  // Also redirect to room if user is already in a room
   useEffect(() => {
     const loadProfile = async () => {
       // First try to load from database if user is available
@@ -27,11 +28,26 @@ export default function HomePage() {
         try {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name, avatar_emoji')
+            .select('name, avatar_emoji, current_room_id')
             .eq('user_id', user.id)
             .single()
 
           if (profile) {
+            // If user is already in a room, redirect to that room
+            if (profile.current_room_id) {
+              // Get room code from room id
+              const { data: room } = await supabase
+                .from('rooms')
+                .select('code')
+                .eq('id', profile.current_room_id)
+                .single()
+
+              if (room) {
+                router.push(`/room/${room.code}`)
+                return
+              }
+            }
+
             if (profile.avatar_emoji) {
               setEmoji(profile.avatar_emoji)
               localStorage.setItem('jizhang_emoji', profile.avatar_emoji)
@@ -70,7 +86,7 @@ export default function HomePage() {
     if (!authLoading) {
       loadProfile()
     }
-  }, [user, supabase, authLoading])
+  }, [user, supabase, authLoading, router])
 
   // Handle profile save success - update local state for immediate UI update
   const handleProfileSuccess = (newEmoji: string, newNickname: string) => {
@@ -91,6 +107,26 @@ export default function HomePage() {
     setCreating(true)
 
     try {
+      // Check if user is already in a room
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('current_room_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (currentProfile?.current_room_id) {
+        // Get the room code of the current room
+        const { data: currentRoom } = await supabase
+          .from('rooms')
+          .select('code')
+          .eq('id', currentProfile.current_room_id)
+          .single()
+
+        if (currentRoom) {
+          throw new Error(`你已在房间 ${currentRoom.code} 中，请先离开当前房间`)
+        }
+      }
+
       // Generate unique room code
       let code = generateRoomCode()
       let attempts = 0

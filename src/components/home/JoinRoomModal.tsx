@@ -43,6 +43,26 @@ export function JoinRoomModal({
     setError('')
 
     try {
+      // Check if user is already in a room
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('current_room_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (currentProfile?.current_room_id) {
+        // Get the room code of the current room
+        const { data: currentRoom } = await supabase
+          .from('rooms')
+          .select('code')
+          .eq('id', currentProfile.current_room_id)
+          .single()
+
+        if (currentRoom) {
+          throw new Error(`你已在房间 ${currentRoom.code} 中，请先离开当前房间`)
+        }
+      }
+
       // Check if room exists
       const { data: room, error: roomError } = await supabase
         .from('rooms')
