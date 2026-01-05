@@ -12,6 +12,7 @@ import { TransactionForm } from '@/components/room/TransactionForm'
 import { SettlementView } from '@/components/room/SettlementView'
 import { ShareModal } from '@/components/room/ShareModal'
 import { RoomSettingsModal } from '@/components/room/RoomSettingsModal'
+import { Modal } from '@/components/ui/Modal'
 import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
@@ -49,6 +50,7 @@ export default function RoomPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
+  const [showHelpModal, setShowHelpModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'game' | 'history'>('game')
   const [autoJoining, setAutoJoining] = useState(false)
   const hasAutoJoined = useRef(false)
@@ -230,7 +232,7 @@ export default function RoomPage() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <RoomHeader room={room} isConnected={isConnected} playerCount={players.length} onOpenSettings={() => setShowSettingsModal(true)} />
+      <RoomHeader room={room} isConnected={isConnected} playerCount={players.length} onOpenSettings={() => setShowSettingsModal(true)} onOpenHelp={() => setShowHelpModal(true)} />
 
       {/* Fixed player list */}
       <div className="flex-shrink-0 px-4 pt-4 max-w-md mx-auto w-full">
@@ -347,6 +349,32 @@ export default function RoomPage() {
         onOpenSettlement={() => setShowSettlement(true)}
         onSetCountdownSeconds={setCountdownSeconds}
       />
+
+      {/* Help modal */}
+      <Modal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        title="使用说明"
+      >
+        <div className="space-y-4 text-sm text-gray-600">
+          <div>
+            <h3 className="font-medium text-gray-900 mb-1">邀请好友</h3>
+            <p>点击玩家列表右侧的「+」按钮，分享房间链接或二维码邀请好友加入。</p>
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900 mb-1">头像操作</h3>
+            <p>点击自己的头像可以修改昵称和头像；点击其他玩家头像记录支出。</p>
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900 mb-1">自动下一轮</h3>
+            <p>每次记录交易后会自动开始倒计时，倒计时结束自动进入下一轮；也可以手动点击「下一轮」。可在右上角设置中调整倒计时时长或关闭此功能。</p>
+          </div>
+          <div>
+            <h3 className="font-medium text-gray-900 mb-1">结算</h3>
+            <p>牌局结束后，点击右上角设置按钮进入结算页面，系统会自动计算最优转账方案。</p>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
