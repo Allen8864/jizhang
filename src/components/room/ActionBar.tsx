@@ -51,7 +51,7 @@ export function ActionBar({
             </button>
           ) : (
             <div className="flex-1 min-h-[44px] px-4 text-center text-gray-500 font-medium flex items-center justify-center">
-              第{currentRoundNum}轮
+              第 {currentRoundNum} 轮
             </div>
           )}
 

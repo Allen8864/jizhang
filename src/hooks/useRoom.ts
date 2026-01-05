@@ -120,6 +120,17 @@ export function useRoom(roomCode: string) {
 
     const roomId = state.room.id
 
+    // Handle channel status changes
+    const handleChannelStatus = (status: string) => {
+      const isConnected = status === 'SUBSCRIBED'
+      setState(prev => {
+        if (prev.isConnected !== isConnected) {
+          return { ...prev, isConnected }
+        }
+        return prev
+      })
+    }
+
     // Subscribe to profiles changes (filter by current_room_id)
     const profilesChannel = supabase
       .channel(`profiles:${roomId}`)
@@ -169,9 +180,7 @@ export function useRoom(roomCode: string) {
           })
         }
       )
-      .subscribe((status) => {
-        setState(prev => ({ ...prev, isConnected: status === 'SUBSCRIBED' }))
-      })
+      .subscribe(handleChannelStatus)
 
     // Subscribe to room changes (for current_round, countdown updates, and deletion)
     const roomChannel = supabase
@@ -203,7 +212,7 @@ export function useRoom(roomCode: string) {
           }))
         }
       )
-      .subscribe()
+      .subscribe(handleChannelStatus)
 
     // Subscribe to transactions changes
     const transactionsChannel = supabase
@@ -237,12 +246,61 @@ export function useRoom(roomCode: string) {
           })
         }
       )
-      .subscribe()
+      .subscribe(handleChannelStatus)
 
     return () => {
       supabase.removeChannel(profilesChannel)
       supabase.removeChannel(roomChannel)
       supabase.removeChannel(transactionsChannel)
+    }
+  }, [state.room, user, supabase])
+
+  // Reconnect when page becomes visible (handles browser background/foreground)
+  useEffect(() => {
+    if (!state.room || !user) return
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        // Page became visible - refetch data to sync state
+        try {
+          const [profilesRes, transactionsRes, roomRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('current_room_id', state.room!.id),
+            supabase.from('transactions').select('*').eq('room_id', state.room!.id).order('created_at', { ascending: false }),
+            supabase.from('rooms').select('*').eq('id', state.room!.id).single(),
+          ])
+
+          if (roomRes.error) {
+            // Room might have been deleted
+            if (roomRes.error.code === 'PGRST116') {
+              setState(prev => ({ ...prev, room: null, error: 'room_settled' }))
+              return
+            }
+          }
+
+          const currentPlayer = profilesRes.data?.find(p => p.user_id === user.id) || null
+          const countdownRemaining = roomRes.data ? calculateCountdownRemaining(roomRes.data.countdown_end_at) : null
+
+          setState(prev => ({
+            ...prev,
+            room: roomRes.data || prev.room,
+            players: profilesRes.data || prev.players,
+            transactions: transactionsRes.data || prev.transactions,
+            currentRoundNum: roomRes.data?.current_round || prev.currentRoundNum,
+            currentPlayer,
+            countdownRemaining,
+            isCountdownWarning: countdownRemaining !== null && countdownRemaining <= COUNTDOWN_WARNING_THRESHOLD,
+            isConnected: true,
+          }))
+        } catch (err) {
+          console.error('Visibility change refetch error:', err)
+          setState(prev => ({ ...prev, isConnected: false }))
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [state.room, user, supabase])
 
