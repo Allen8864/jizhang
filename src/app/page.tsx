@@ -136,7 +136,7 @@ export default function HomePage() {
           .from('rooms')
           .select('id')
           .eq('code', code)
-          .single()
+          .maybeSingle()
 
         if (!existing) break
         code = generateRoomCode()
