@@ -34,7 +34,7 @@ body {
 
 /* Safe area padding utilities */
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
 }
 
 .pt-safe {

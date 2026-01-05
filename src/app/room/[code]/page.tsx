@@ -11,6 +11,7 @@ import { GameRoundTable } from '@/components/room/GameRoundTable'
 import { TransactionForm } from '@/components/room/TransactionForm'
 import { SettlementView } from '@/components/room/SettlementView'
 import { ShareModal } from '@/components/room/ShareModal'
+import { RoomSettingsModal } from '@/components/room/RoomSettingsModal'
 import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
@@ -42,6 +43,7 @@ export default function RoomPage() {
   const [targetPlayer, setTargetPlayer] = useState<Profile | null>(null)
   const [showSettlement, setShowSettlement] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showJoinForm, setShowJoinForm] = useState(false)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
   const [nickname, setNickname] = useState('')
@@ -220,7 +222,7 @@ export default function RoomPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <RoomHeader room={room} isConnected={isConnected} playerCount={players.length} />
+      <RoomHeader room={room} isConnected={isConnected} playerCount={players.length} onOpenSettings={() => setShowSettingsModal(true)} />
 
       <main className="px-4 py-4 max-w-md mx-auto space-y-4">
         {/* Player list */}
@@ -278,10 +280,8 @@ export default function RoomPage() {
 
       {/* Action bar */}
       <ActionBar
-        onSettlement={() => setShowSettlement(true)}
         onNewRound={handleNewRound}
         currentRoundNum={currentRoundNum}
-        transactionCount={transactions.length}
       />
 
       {/* Transaction form modal */}
@@ -321,6 +321,14 @@ export default function RoomPage() {
           nickname={currentPlayer.name}
         />
       )}
+
+      {/* Room settings modal */}
+      <RoomSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        room={room}
+        onOpenSettlement={() => setShowSettlement(true)}
+      />
     </div>
   )
 }
