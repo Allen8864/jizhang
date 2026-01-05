@@ -113,6 +113,7 @@ export default function HomePage() {
         .insert({
           code,
           created_by_user_id: user.id,
+          countdown_seconds: 90,
         })
         .select()
         .single()

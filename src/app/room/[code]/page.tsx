@@ -85,6 +85,13 @@ export default function RoomPage() {
     }
   }, [isNewlyCreated, room, loading, router, roomCode])
 
+  // Handle room settled - redirect to home
+  useEffect(() => {
+    if (error === 'room_settled') {
+      router.push('/')
+    }
+  }, [error, router])
+
   // Handle join room - upsert profile with current_room_id
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -165,6 +172,18 @@ export default function RoomPage() {
 
   // Error state
   if (error) {
+    // Don't show error UI for room_settled, we're redirecting
+    if (error === 'room_settled') {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-gray-500">房间已结算，正在返回首页...</p>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-sm">

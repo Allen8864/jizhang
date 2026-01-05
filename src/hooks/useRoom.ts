@@ -173,7 +173,7 @@ export function useRoom(roomCode: string) {
         setState(prev => ({ ...prev, isConnected: status === 'SUBSCRIBED' }))
       })
 
-    // Subscribe to room changes (for current_round and countdown updates)
+    // Subscribe to room changes (for current_round, countdown updates, and deletion)
     const roomChannel = supabase
       .channel(`room:${roomId}`)
       .on(
@@ -188,6 +188,18 @@ export function useRoom(roomCode: string) {
             currentRoundNum: updatedRoom.current_round,
             countdownRemaining,
             isCountdownWarning: countdownRemaining !== null && countdownRemaining <= COUNTDOWN_WARNING_THRESHOLD,
+          }))
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+        () => {
+          // Room was deleted (settled), set room to null to trigger redirect
+          setState(prev => ({
+            ...prev,
+            room: null,
+            error: 'room_settled',
           }))
         }
       )
