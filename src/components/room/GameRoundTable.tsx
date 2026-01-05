@@ -23,25 +23,11 @@ export function GameRoundTable({
 }: GameRoundTableProps) {
   // Calculate net amount for each player in each round
   const roundData = useMemo(() => {
-    // Get all unique round numbers from transactions
-    const roundNums = new Set(transactions.map(t => t.round_num))
+    // Always show rounds from 1 to currentRoundNum, even if some rounds have no transactions
+    // This ensures rounds without transactions are displayed with 0 values
+    const allRoundNums = Array.from({ length: currentRoundNum }, (_, i) => i + 1)
 
-    // If no transactions, show current round (starting from 1)
-    if (roundNums.size === 0) {
-      const emptyRound: RoundPlayerAmount = {}
-      players.forEach(p => {
-        emptyRound[p.user_id] = 0
-      })
-      return [{
-        roundNum: currentRoundNum,
-        amounts: emptyRound,
-      }]
-    }
-
-    // Sort round numbers
-    const sortedRoundNums = Array.from(roundNums).sort((a, b) => a - b)
-
-    return sortedRoundNums.map(roundNum => {
+    return allRoundNums.map(roundNum => {
       const amounts: RoundPlayerAmount = {}
 
       // Initialize all players with 0

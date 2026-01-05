@@ -28,11 +28,6 @@ export function useRoom(roomCode: string) {
     isConnected: false,
   })
 
-  // Calculate current round number from transactions
-  const calculateCurrentRoundNum = useCallback((transactions: Transaction[]) => {
-    if (transactions.length === 0) return 1
-    return Math.max(...transactions.map(t => t.round_num))
-  }, [])
 
   // Initial data fetch
   useEffect(() => {
@@ -69,13 +64,12 @@ export function useRoom(roomCode: string) {
 
         const currentPlayer = profilesRes.data?.find(p => p.user_id === user.id) || null
         const transactions = transactionsRes.data || []
-        const currentRoundNum = calculateCurrentRoundNum(transactions)
 
         setState({
           room,
           players: profilesRes.data || [],
           transactions,
-          currentRoundNum,
+          currentRoundNum: room.current_round, // Read from database
           currentPlayer,
           loading: false,
           error: null,
@@ -97,7 +91,7 @@ export function useRoom(roomCode: string) {
     }
 
     fetchRoomData()
-  }, [user, roomCode, supabase, authLoading, calculateCurrentRoundNum])
+  }, [user, roomCode, supabase, authLoading])
 
   // Realtime subscriptions
   useEffect(() => {
@@ -158,6 +152,23 @@ export function useRoom(roomCode: string) {
         setState(prev => ({ ...prev, isConnected: status === 'SUBSCRIBED' }))
       })
 
+    // Subscribe to room changes (for current_round updates)
+    const roomChannel = supabase
+      .channel(`room:${roomId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+        (payload) => {
+          const updatedRoom = payload.new as Room
+          setState(prev => ({
+            ...prev,
+            room: updatedRoom,
+            currentRoundNum: updatedRoom.current_round,
+          }))
+        }
+      )
+      .subscribe()
+
     // Subscribe to transactions changes
     const transactionsChannel = supabase
       .channel(`transactions:${roomId}`)
@@ -176,7 +187,6 @@ export function useRoom(roomCode: string) {
               return {
                 ...prev,
                 transactions: newTransactions,
-                currentRoundNum: Math.max(prev.currentRoundNum, newTx.round_num),
               }
             }
             if (payload.eventType === 'DELETE') {
@@ -185,9 +195,6 @@ export function useRoom(roomCode: string) {
               return {
                 ...prev,
                 transactions: newTransactions,
-                currentRoundNum: newTransactions.length > 0
-                  ? Math.max(...newTransactions.map(t => t.round_num))
-                  : 1,
               }
             }
             return prev
@@ -198,6 +205,7 @@ export function useRoom(roomCode: string) {
 
     return () => {
       supabase.removeChannel(profilesChannel)
+      supabase.removeChannel(roomChannel)
       supabase.removeChannel(transactionsChannel)
     }
   }, [state.room, user, supabase])
@@ -224,13 +232,22 @@ export function useRoom(roomCode: string) {
   const startNewRound = useCallback(async () => {
     if (!state.room) throw new Error('未加入房间')
 
-    // Simply increment the current round number
-    // The next transaction will use this new round number
+    const newRoundNum = state.currentRoundNum + 1
+
+    // Update the round number in the database
+    const { error } = await supabase
+      .from('rooms')
+      .update({ current_round: newRoundNum })
+      .eq('id', state.room.id)
+
+    if (error) throw error
+
+    // Optimistically update local state (realtime subscription will also update it)
     setState(prev => ({
       ...prev,
-      currentRoundNum: prev.currentRoundNum + 1,
+      currentRoundNum: newRoundNum,
     }))
-  }, [state.room])
+  }, [state.room, state.currentRoundNum, supabase])
 
   return {
     ...state,

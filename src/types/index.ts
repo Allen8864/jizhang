@@ -4,6 +4,7 @@ export interface Room {
   id: string
   code: string
   created_by_user_id: string
+  current_round: number // Current round number, starting from 1
   created_at: string
   updated_at: string
 }
