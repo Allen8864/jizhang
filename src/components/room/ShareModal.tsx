@@ -12,13 +12,22 @@ interface ShareModalProps {
   room: Room
 }
 
+// 检测是否在微信内置浏览器中
+function isWeChatBrowser(): boolean {
+  if (typeof window === 'undefined') return false
+  const ua = window.navigator.userAgent.toLowerCase()
+  return ua.includes('micromessenger')
+}
+
 export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
+  const [isWeChat, setIsWeChat] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setShareUrl(`${window.location.origin}/room/${room.code}`)
+      setIsWeChat(isWeChatBrowser())
     }
   }, [room.code])
 
@@ -47,7 +56,8 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
     }
   }
 
-  const canShare = typeof navigator !== 'undefined' && !!navigator.share
+  // 微信环境下不显示原生分享按钮（会导致闪退）
+  const canShare = typeof navigator !== 'undefined' && !!navigator.share && !isWeChat
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="分享房间">
@@ -87,6 +97,12 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
             >
               分享给好友
             </Button>
+          )}
+
+          {isWeChat && (
+            <p className="text-center text-sm text-gray-500">
+              复制链接后发送给好友即可
+            </p>
           )}
         </div>
       </div>
