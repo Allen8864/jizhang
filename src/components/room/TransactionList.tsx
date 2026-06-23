@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { formatAmount } from '@/lib/settlement'
+import { useI18n } from '@/lib/i18n'
 import type { Transaction, Profile } from '@/types'
 
 interface TransactionListProps {
@@ -13,6 +14,8 @@ export function TransactionList({
   transactions,
   players,
 }: TransactionListProps) {
+  const { locale, t } = useI18n()
+
   // Create player lookup map by user_id
   const playerMap = useMemo(() => {
     return new Map(players.map(p => [p.user_id, p]))
@@ -43,7 +46,7 @@ export function TransactionList({
   // Format time as HH:MM
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   }
 
   if (transactions.length === 0) {
@@ -53,8 +56,8 @@ export function TransactionList({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
-        <p>暂无记录</p>
-        <p className="text-sm mt-1">点击好友头像开始记账</p>
+        <p>{t.transaction.emptyTitle}</p>
+        <p className="text-sm mt-1">{t.transaction.emptyHint}</p>
       </div>
     )
   }
@@ -67,7 +70,7 @@ export function TransactionList({
           <div className="flex items-center gap-2 mb-2">
             <div className="h-px bg-gray-200 flex-1" />
             <span className="text-xs text-gray-400 px-2">
-              第 {group.roundNum} 轮
+              {t.room.roundLabel(group.roundNum)}
             </span>
             <div className="h-px bg-gray-200 flex-1" />
           </div>
@@ -84,16 +87,16 @@ export function TransactionList({
                     {formatTime(tx.created_at)}
                   </span>
                   <span className="font-medium text-gray-900 text-sm truncate max-w-[35%]">
-                    {fromPlayer?.avatar_emoji} {fromPlayer?.name || '未知'}
+                    {fromPlayer?.avatar_emoji} {fromPlayer?.name || t.common.unknown}
                   </span>
                   <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                   <span className="font-medium text-gray-900 text-sm truncate max-w-[35%]">
-                    {toPlayer?.avatar_emoji} {toPlayer?.name || '未知'}
+                    {toPlayer?.avatar_emoji} {toPlayer?.name || t.common.unknown}
                   </span>
                   <span className="font-num font-semibold text-gray-900 flex-shrink-0 ml-auto">
-                    {formatAmount(tx.amount)}
+                    {formatAmount(tx.amount, locale)}
                   </span>
                 </div>
               )

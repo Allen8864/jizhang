@@ -11,6 +11,8 @@
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
+    "lucide-react": "^1.17.0",
+    "motion-icons-react": "^1.1.0",
     "nanoid": "^5.1.6",
     "next": "16.1.1",
     "qrcode.react": "^4.2.0",

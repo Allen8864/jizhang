@@ -3,15 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { JoinRoomModal } from '@/components/home/JoinRoomModal'
 import { useSupabase } from '@/hooks/useSupabase'
 import { generateRoomCode } from '@/lib/settlement'
+import { useI18n } from '@/lib/i18n'
 import { getRandomNickname, getRandomEmoji } from '@/types'
 
 export default function HomePage() {
   const router = useRouter()
   const { user, supabase, loading: authLoading } = useSupabase()
+  const { language, t } = useI18n()
 
   const [emoji, setEmoji] = useState('😀')
   const [nickname, setNickname] = useState('')
@@ -58,7 +61,7 @@ export default function HomePage() {
             }
             return
           }
-        } catch (e) {
+        } catch {
           // Profile not found in database, continue with localStorage/random
         }
       }
@@ -75,18 +78,18 @@ export default function HomePage() {
         if (savedNickname) {
           setNickname(savedNickname)
         } else {
-          setNickname(getRandomNickname())
+          setNickname(getRandomNickname(language))
         }
-      } catch (e) {
+      } catch {
         setEmoji(getRandomEmoji())
-        setNickname(getRandomNickname())
+        setNickname(getRandomNickname(language))
       }
     }
 
     if (!authLoading) {
       loadProfile()
     }
-  }, [user, supabase, authLoading, router])
+  }, [user, supabase, authLoading, router, language])
 
   // Handle profile save success - update local state for immediate UI update
   const handleProfileSuccess = (newEmoji: string, newNickname: string) => {
@@ -123,7 +126,7 @@ export default function HomePage() {
           .single()
 
         if (currentRoom) {
-          throw new Error(`你已在房间 ${currentRoom.code} 中，请先离开当前房间`)
+          throw new Error(t.errors.alreadyInRoom(currentRoom.code))
         }
       }
 
@@ -174,7 +177,7 @@ export default function HomePage() {
       router.push(`/room/${code}?created=1`)
     } catch (err) {
       console.error('Create room error:', err)
-      const message = err instanceof Error ? err.message : '创建房间失败'
+      const message = err instanceof Error ? err.message : t.errors.createRoomFailed
       alert(message)
     } finally {
       setCreating(false)
@@ -193,8 +196,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="pt-12 pb-20 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">打牌记账</h1>
+      <header className="relative pt-12 pb-20 text-center">
+        <div className="absolute right-4 top-4">
+          <LanguageSwitcher />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900">{t.common.appName}</h1>
       </header>
 
       {/* Profile section */}
@@ -208,13 +214,13 @@ export default function HomePage() {
           {/* Nickname + Edit button */}
           <div className="relative flex items-center justify-center">
             <span className="text-lg font-medium text-gray-900">
-              {nickname || '未设置昵称'}
+              {nickname || t.home.unsetNickname}
             </span>
             <button
               type="button"
               onClick={() => setShowProfileEditor(true)}
               className="absolute left-full ml-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors p-2 flex-shrink-0"
-              aria-label="编辑昵称"
+              aria-label={t.home.editNickname}
             >
               <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -233,7 +239,7 @@ export default function HomePage() {
             loading={creating}
             disabled={authLoading}
           >
-            创建房间
+            {t.home.createRoom}
           </Button>
 
           <Button
@@ -243,7 +249,7 @@ export default function HomePage() {
             onClick={handleJoinRoom}
             disabled={authLoading}
           >
-            加入房间
+            {t.home.joinRoom}
           </Button>
 
           <Button
@@ -252,14 +258,14 @@ export default function HomePage() {
             size="lg"
             onClick={() => router.push('/history')}
           >
-            历史记录
+            {t.home.history}
           </Button>
         </div>
       </div>
 
       {/* Footer */}
       <footer className="py-6 text-center text-xs text-gray-400">
-        无需注册，即开即用
+        {t.home.footer}
       </footer>
 
       {/* Modals */}

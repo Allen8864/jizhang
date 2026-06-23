@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useI18n } from '@/lib/i18n'
 
 interface JoinRoomModalProps {
   isOpen: boolean
@@ -20,6 +21,7 @@ export function JoinRoomModal({
   emoji,
 }: JoinRoomModalProps) {
   const { user, supabase } = useSupabase()
+  const { t } = useI18n()
   const [roomCode, setRoomCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -31,13 +33,13 @@ export function JoinRoomModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) {
-      setError('请稍候，正在初始化...')
+      setError(t.errors.initializing)
       return
     }
 
     const code = roomCode.trim()
     if (code.length !== 4 || !/^\d{4}$/.test(code)) {
-      setError('请输入4位数字房间号')
+      setError(t.errors.invalidRoomCode)
       return
     }
 
@@ -54,7 +56,7 @@ export function JoinRoomModal({
         .single()
 
       if (roomError || !room) {
-        throw new Error('房间不存在，请检查房间号')
+        throw new Error(t.errors.roomNotFoundCheckCode)
       }
 
       // Check if user is already in a room
@@ -79,7 +81,7 @@ export function JoinRoomModal({
           .single()
 
         if (currentRoom) {
-          throw new Error(`你已在房间 ${currentRoom.code} 中，请先离开当前房间`)
+          throw new Error(t.errors.alreadyInRoom(currentRoom.code))
         }
       }
 
@@ -102,7 +104,7 @@ export function JoinRoomModal({
       navigateToRoom(room.code)
     } catch (err) {
       console.error('Join room error:', err)
-      setError(err instanceof Error ? err.message : '加入房间失败')
+      setError(err instanceof Error ? err.message : t.errors.joinRoomFailed)
     } finally {
       setLoading(false)
     }
@@ -116,10 +118,10 @@ export function JoinRoomModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="加入房间">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.joinRoom.title}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          placeholder="输入4位数字房间号"
+          placeholder={t.joinRoom.placeholder}
           value={roomCode}
           onChange={handleCodeChange}
           className="text-center text-2xl tracking-[0.3em] font-num"
@@ -139,7 +141,7 @@ export function JoinRoomModal({
           loading={loading}
           disabled={roomCode.length !== 4}
         >
-          加入
+          {t.joinRoom.submit}
         </Button>
       </form>
     </Modal>

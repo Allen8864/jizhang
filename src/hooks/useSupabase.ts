@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import type { User, SupabaseClient } from '@supabase/supabase-js'
 
@@ -33,7 +33,7 @@ export function useSupabase(): UseSupabaseReturn {
             // Store user ID in localStorage for reference
             try {
               localStorage.setItem('jizhang_user_id', data.user.id)
-            } catch (e) {
+            } catch {
               // localStorage might not be available
             }
           }

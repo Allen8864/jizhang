@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Avatar } from '@/components/ui/Avatar'
 import { parseToCents } from '@/lib/settlement'
+import { useI18n } from '@/lib/i18n'
 import type { Profile } from '@/types'
 
 interface TransactionFormProps {
@@ -22,6 +23,7 @@ export function TransactionForm({
   toPlayer,
   onSubmit,
 }: TransactionFormProps) {
+  const { t } = useI18n()
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -39,13 +41,13 @@ export function TransactionForm({
     setError('')
 
     if (!fromPlayer || !toPlayer) {
-      setError('请选择付款人和收款人')
+      setError(t.errors.missingPlayers)
       return
     }
 
     const cents = parseToCents(amount)
     if (!cents) {
-      setError('请输入有效分数')
+      setError(t.errors.invalidAmount)
       return
     }
 
@@ -59,14 +61,18 @@ export function TransactionForm({
 
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : '添加失败')
+      if (err instanceof Error && err.message === 'not_joined') {
+        setError(t.errors.notJoined)
+      } else {
+        setError(err instanceof Error ? err.message : t.errors.addTransactionFailed)
+      }
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="记录支出">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.transaction.title}>
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Avatar section: from -> to */}
         <div className="flex items-center justify-center gap-8 py-2">
@@ -77,7 +83,7 @@ export function TransactionForm({
               size="lg"
             />
             <span className="mt-1 text-sm text-gray-600 truncate max-w-[100px]">
-              {fromPlayer?.name || '我'}
+              {fromPlayer?.name || t.transaction.fallbackFrom}
             </span>
           </div>
 
@@ -95,7 +101,7 @@ export function TransactionForm({
               size="lg"
             />
             <span className="mt-1 text-sm text-gray-600 truncate max-w-[100px]">
-              {toPlayer?.name || '对方'}
+              {toPlayer?.name || t.transaction.fallbackTo}
             </span>
           </div>
         </div>
@@ -108,7 +114,7 @@ export function TransactionForm({
             pattern="[0-9]*"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
-            placeholder="输入分数"
+            placeholder={t.transaction.amountPlaceholder}
             className="w-full px-4 py-3 text-center border border-gray-300 rounded-lg
               focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             autoFocus
@@ -127,7 +133,7 @@ export function TransactionForm({
           loading={loading}
           disabled={!amount}
         >
-          支出
+          {t.transaction.submit}
         </Button>
       </form>
     </Modal>

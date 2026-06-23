@@ -1,3 +1,5 @@
+import type { Language } from '@/lib/i18n'
+
 // Database entity types
 
 export interface Room {
@@ -72,7 +74,7 @@ export interface SettlementHistory {
   player_results: PlayerResult[]
 }
 
-// 随机昵称列表（麻将/扑克风格）
+// Random nickname lists for game/card-table style profiles.
 export const RANDOM_NICKNAMES = [
   // 麻将术语
   '杠上花', '清一色', '大三元', '小四喜', '十三幺',
@@ -134,12 +136,32 @@ export const RANDOM_NICKNAMES = [
   '事事顺', '心想事', '万事兴', '吉祥如', '福禄寿',
 ]
 
-export function getRandomNickname(): string {
-  return RANDOM_NICKNAMES[Math.floor(Math.random() * RANDOM_NICKNAMES.length)]
+export const RANDOM_NICKNAMES_EN = [
+  'Kong Bloom', 'Pure Suit', 'Triple Dragon', 'Lucky East', 'Thirteen Ace',
+  'Seven Pairs', 'Pong Master', 'Half Flush', 'Clean Hand', 'Ready Ron',
+  'Self Draw', 'River Catch', 'Open Kong', 'Quiet Hand', 'Final Tile',
+  'Royal Flush', 'Four Kings', 'Full House', 'Straight Ace', 'Bomb Dealer',
+  'Joker Pair', 'Table Boss', 'Chip Runner', 'Card Shark', 'Pocket Ace',
+  'Lucky Cat', 'Fortune Dog', 'Jade Rabbit', 'Golden Dragon', 'Happy Panda',
+  'Clever Fox', 'Brave Lion', 'Moon Tiger', 'Swift Bunny', 'Koi King',
+  'Dumpling Ace', 'Noodle King', 'Bao Boss', 'Spring Roll', 'Hotpot Hero',
+  'Tea Break', 'Snack Baron', 'Mooncake Pro', 'Coffee Rush', 'Soda Pop',
+  'Gold Ingot', 'Money Tree', 'Lucky Star', 'Comeback Kid', 'Steady Hand',
+  'Final Boss', 'Easy Win', 'Calm Dealer', 'Fast Thinker', 'Table Talk',
+  'Early Bird', 'Night Owl', 'Weekend Pro', 'Holiday Win', 'Good Vibes',
+  'One More', 'All In', 'Stay Cool', 'No Panic', 'I Am Here',
+  'Wait For Me', 'Carry Me', 'Taking Off', 'Big Winner', 'Last Laugh',
+  'Landlord', 'Worker Bee', 'Chill Player', 'Quiet Type', 'Chatty Pro',
+  'Newbie Luck', 'Expert Move', 'Quick Pick', 'Slow Roller', 'Sharp Mind',
+  'Step Up', 'Yearly Luck', 'Daily Joy', 'Smooth Play', 'Wish Granted',
+]
+
+export function getRandomNickname(language: Language = 'zh'): string {
+  const list = language === 'en' ? RANDOM_NICKNAMES_EN : RANDOM_NICKNAMES
+  return list[Math.floor(Math.random() * list.length)]
 }
 
 export function getRandomEmoji(): string {
-  // 使用 EmojiPicker 中的 emoji 列表
   const EMOJI_LIST = [
     '😀', '😎', '🤓', '😊', '🥳', '😇', '🤩', '😋',
     '🐶', '🐱', '🐼', '🐨', '🦊', '🦁', '🐯', '🐰',

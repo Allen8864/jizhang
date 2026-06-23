@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import { LanguageProvider } from "@/lib/i18n"
+import "motion-icons-react/style.css"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -13,13 +15,13 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "记账 - 麻将/扑克记账工具",
-  description: "免费在线记账工具，支持多人实时同步、自动结算",
+  title: "Jizhang / Game Ledger",
+  description: "Real-time bilingual score and settlement tracker for card and table games",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "记账",
+    title: "Jizhang",
   },
 }
 
@@ -42,7 +44,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   )

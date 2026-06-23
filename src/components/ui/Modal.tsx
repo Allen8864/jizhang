@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useCallback, ReactNode } from 'react'
+import { useI18n } from '@/lib/i18n'
 
 interface ModalProps {
   isOpen: boolean
@@ -10,6 +11,8 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, children, title }: ModalProps) {
+  const { t } = useI18n()
+
   // Close on escape key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -48,6 +51,7 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
             <button
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-label={t.common.close}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

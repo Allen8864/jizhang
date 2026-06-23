@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { useI18n } from '@/lib/i18n'
 import type { Room } from '@/types'
 
 interface ShareModalProps {
@@ -12,7 +13,6 @@ interface ShareModalProps {
   room: Room
 }
 
-// 检测是否在微信内置浏览器中
 function isWeChatBrowser(): boolean {
   if (typeof window === 'undefined') return false
   const ua = window.navigator.userAgent.toLowerCase()
@@ -20,16 +20,15 @@ function isWeChatBrowser(): boolean {
 }
 
 export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
+  const { t } = useI18n()
   const [copied, setCopied] = useState(false)
-  const [shareUrl, setShareUrl] = useState('')
-  const [isWeChat, setIsWeChat] = useState(false)
-
-  useEffect(() => {
+  const shareUrl = useMemo(() => {
     if (typeof window !== 'undefined') {
-      setShareUrl(`${window.location.origin}/room/${room.code}`)
-      setIsWeChat(isWeChatBrowser())
+      return `${window.location.origin}/room/${room.code}`
     }
+    return ''
   }, [room.code])
+  const isWeChat = isWeChatBrowser()
 
   const handleCopy = async () => {
     try {
@@ -45,26 +44,25 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `加入房间`,
-          text: `房间号: ${room.code}`,
+          title: t.share.nativeTitle,
+          text: t.share.nativeText(room.code),
           url: shareUrl,
         })
-      } catch (err) {
+      } catch {
         // User cancelled or share failed
         console.log('Share cancelled')
       }
     }
   }
 
-  // 微信环境下不显示原生分享按钮（会导致闪退）
   const canShare = typeof navigator !== 'undefined' && !!navigator.share && !isWeChat
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="分享房间">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.share.title}>
       <div className="space-y-6">
         {/* Room code display */}
         <div className="text-center">
-          <p className="text-sm text-gray-500 mb-2">房间号</p>
+          <p className="text-sm text-gray-500 mb-2">{t.share.roomCode}</p>
           <div className="text-4xl font-num font-bold text-gray-900 tracking-widest">
             {room.code}
           </div>
@@ -86,7 +84,7 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
             className="w-full"
             onClick={handleCopy}
           >
-            {copied ? '已复制' : '复制链接'}
+            {copied ? t.share.copied : t.share.copyLink}
           </Button>
 
           {canShare && (
@@ -95,13 +93,13 @@ export function ShareModal({ isOpen, onClose, room }: ShareModalProps) {
               className="w-full"
               onClick={handleShare}
             >
-              分享给好友
+              {t.share.shareFriend}
             </Button>
           )}
 
           {isWeChat && (
             <p className="text-center text-sm text-gray-500">
-              复制链接后发送给好友即可
+              {t.share.wechatHint}
             </p>
           )}
         </div>

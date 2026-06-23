@@ -1,7 +1,7 @@
 {
-  "name": "记账 - 麻将/扑克记账工具",
-  "short_name": "记账",
-  "description": "免费在线记账工具，支持多人实时同步、自动结算",
+  "name": "Jizhang / Game Ledger",
+  "short_name": "Jizhang",
+  "description": "Real-time bilingual score and settlement tracker for card and table games",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { calculateBalances, formatBalance } from '@/lib/settlement'
+import { useI18n } from '@/lib/i18n'
 import type { Profile, Transaction } from '@/types'
 
 interface PlayerListProps {
@@ -15,6 +16,8 @@ interface PlayerListProps {
 }
 
 export function PlayerList({ players, transactions, currentUserId, onAddFriend, onEditProfile, onPlayerClick }: PlayerListProps) {
+  const { locale, t } = useI18n()
+
   const balances = useMemo(() => {
     return calculateBalances(players, transactions)
   }, [players, transactions])
@@ -60,7 +63,7 @@ export function PlayerList({ players, transactions, currentUserId, onAddFriend, 
                       ? 'text-red-600'
                       : 'text-gray-400'
                   }`}>
-                    {formatBalance(balance)}
+                    {formatBalance(balance, locale)}
                   </div>
                 </div>
               </button>
@@ -89,7 +92,7 @@ export function PlayerList({ players, transactions, currentUserId, onAddFriend, 
             </div>
             <div className="mt-2 text-center">
               <div className="text-sm font-medium text-gray-500 group-hover:text-emerald-600 transition-colors">
-                添加好友
+                {t.room.addFriend}
               </div>
             </div>
           </button>

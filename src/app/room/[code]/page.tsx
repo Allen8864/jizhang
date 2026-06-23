@@ -17,12 +17,14 @@ import { ActionBar } from '@/components/room/ActionBar'
 import { ProfileEditor } from '@/components/home/ProfileEditor'
 import { Button } from '@/components/ui/Button'
 import { PullToRefresh } from '@/components/ui/PullToRefresh'
+import { useI18n } from '@/lib/i18n'
 import { getRandomNickname, getRandomEmoji, type Profile } from '@/types'
 
 export default function RoomPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { language, t } = useI18n()
   const roomCode = (params.code as string).toUpperCase()
   const isNewlyCreated = searchParams.get('created') === '1'
   const isNewUser = searchParams.get('new') === '1'
@@ -83,7 +85,7 @@ export default function RoomPage() {
             .single()
 
           if (currentRoom) {
-            alert(`你已在房间 ${currentRoom.code} 中，正在跳转...`)
+            alert(t.errors.alreadyInRoomRedirect(currentRoom.code))
             router.push(`/room/${currentRoom.code}`)
             return
           }
@@ -92,7 +94,7 @@ export default function RoomPage() {
         const isFirstTimeUser = !existingProfile
 
         // Use existing profile data or generate new
-        let nickname = existingProfile?.name || getRandomNickname()
+        let nickname = existingProfile?.name || getRandomNickname(language)
         let emoji = existingProfile?.avatar_emoji || getRandomEmoji()
 
         // For new users, also check localStorage
@@ -138,7 +140,7 @@ export default function RoomPage() {
     }
 
     autoJoin()
-  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase, roomCode, router])
+  }, [loading, authLoading, room, user, currentPlayer, autoJoining, supabase, roomCode, router, language, t])
 
   // Show share modal if room was just created
   useEffect(() => {
@@ -160,10 +162,25 @@ export default function RoomPage() {
 
   // Handle room errors - redirect to home
   useEffect(() => {
-    if (error === 'room_settled' || error === '房间不存在') {
+    if (error === 'room_settled' || error === 'room_not_found') {
       router.push('/')
     }
   }, [error, router])
+
+  const getErrorMessage = (errorCode: string) => {
+    switch (errorCode) {
+      case 'login_required':
+        return t.errors.loginRequired
+      case 'room_not_found':
+        return t.errors.roomNotFound
+      case 'load_room_failed':
+        return t.errors.loadRoomFailed
+      case 'not_joined':
+        return t.errors.notJoined
+      default:
+        return errorCode
+    }
+  }
 
   // Handle add transaction
   const handleAddTransaction = useCallback(async (
@@ -189,7 +206,7 @@ export default function RoomPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-500">{autoJoining ? '正在加入房间...' : '加载中...'}</p>
+          <p className="text-gray-500">{autoJoining ? t.room.joining : t.common.loading}</p>
         </div>
       </div>
     )
@@ -198,13 +215,13 @@ export default function RoomPage() {
   // Error state
   if (error) {
     // Don't show error UI for redirecting errors
-    if (error === 'room_settled' || error === '房间不存在') {
+    if (error === 'room_settled' || error === 'room_not_found') {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-gray-500">
-              {error === 'room_settled' ? '房间已结算，正在返回首页...' : '房间不存在，正在返回首页...'}
+              {error === 'room_settled' ? t.errors.roomSettledRedirect : t.errors.roomNotFoundRedirect}
             </p>
           </div>
         </div>
@@ -219,10 +236,10 @@ export default function RoomPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">出错了</h2>
-          <p className="text-gray-500 mb-6">{error}</p>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">{t.common.errorTitle}</h2>
+          <p className="text-gray-500 mb-6">{getErrorMessage(error)}</p>
           <Button onClick={() => router.push('/')}>
-            返回首页
+            {t.common.backHome}
           </Button>
         </div>
       </div>
@@ -262,7 +279,7 @@ export default function RoomPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            牌局
+            {t.room.gameTab}
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -272,7 +289,7 @@ export default function RoomPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            记录
+            {t.room.historyTab}
           </button>
         </div>
       </div>
@@ -358,24 +375,24 @@ export default function RoomPage() {
       <Modal
         isOpen={showHelpModal}
         onClose={() => setShowHelpModal(false)}
-        title="使用说明"
+        title={t.help.title}
       >
         <div className="space-y-4 text-sm text-gray-600">
           <div>
-            <h3 className="font-medium text-gray-900 mb-1">邀请好友</h3>
-            <p>点击玩家列表右侧的「+」按钮，分享房间链接或二维码邀请好友加入。</p>
+            <h3 className="font-medium text-gray-900 mb-1">{t.help.inviteTitle}</h3>
+            <p>{t.help.inviteBody}</p>
           </div>
           <div>
-            <h3 className="font-medium text-gray-900 mb-1">头像操作</h3>
-            <p>点击自己的头像可以修改昵称和头像；点击其他玩家头像记录支出。</p>
+            <h3 className="font-medium text-gray-900 mb-1">{t.help.avatarTitle}</h3>
+            <p>{t.help.avatarBody}</p>
           </div>
           <div>
-            <h3 className="font-medium text-gray-900 mb-1">自动下一轮</h3>
-            <p>每次记录交易后会自动开始倒计时，倒计时结束自动进入下一轮；也可以手动点击「下一轮」。可在右上角设置中调整倒计时时长或关闭此功能。</p>
+            <h3 className="font-medium text-gray-900 mb-1">{t.help.autoRoundTitle}</h3>
+            <p>{t.help.autoRoundBody}</p>
           </div>
           <div>
-            <h3 className="font-medium text-gray-900 mb-1">结算</h3>
-            <p>牌局结束后，点击右上角设置按钮进入结算页面，系统会自动计算最优转账方案。</p>
+            <h3 className="font-medium text-gray-900 mb-1">{t.help.settlementTitle}</h3>
+            <p>{t.help.settlementBody}</p>
           </div>
         </div>
       </Modal>

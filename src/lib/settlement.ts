@@ -81,13 +81,12 @@ export function calculateSettlement(balances: PlayerBalance[]): SettlementTransf
 /**
  * Format amount from cents to display string (no currency symbol)
  */
-export function formatAmount(cents: number): string {
+export function formatAmount(cents: number, locale = 'zh-CN'): string {
   const value = cents / 100
-  // Use Chinese number formatting
   if (value % 1 === 0) {
-    return value.toLocaleString('zh-CN')
+    return value.toLocaleString(locale)
   }
-  return value.toLocaleString('zh-CN', {
+  return value.toLocaleString(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
@@ -96,8 +95,8 @@ export function formatAmount(cents: number): string {
 /**
  * Format amount with sign for balance display
  */
-export function formatBalance(cents: number): string {
-  const formatted = formatAmount(Math.abs(cents))
+export function formatBalance(cents: number, locale = 'zh-CN'): string {
+  const formatted = formatAmount(Math.abs(cents), locale)
   if (cents > 0) {
     return `+${formatted}`
   } else if (cents < 0) {

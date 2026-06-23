@@ -49,7 +49,7 @@ export function useRoom(roomCode: string) {
   useEffect(() => {
     if (authLoading) return
     if (!user || !roomCode) {
-      setState(prev => ({ ...prev, loading: false, error: '请先登录' }))
+      setState(prev => ({ ...prev, loading: false, error: 'login_required' }))
       return
     }
 
@@ -66,11 +66,11 @@ export function useRoom(roomCode: string) {
 
         if (roomError) {
           if (roomError.code === 'PGRST116') {
-            throw new Error('房间不存在')
+            throw new Error('room_not_found')
           }
           throw roomError
         }
-        if (!room) throw new Error('房间不存在')
+        if (!room) throw new Error('room_not_found')
 
         // Fetch all related data in parallel
         const [profilesRes, transactionsRes] = await Promise.all([
@@ -106,7 +106,7 @@ export function useRoom(roomCode: string) {
         setState(prev => ({
           ...prev,
           loading: false,
-          error: err instanceof Error ? err.message : '加载房间失败',
+          error: err instanceof Error ? err.message : 'load_room_failed',
         }))
       }
     }
@@ -304,6 +304,26 @@ export function useRoom(roomCode: string) {
     }
   }, [state.room, user, supabase])
 
+  // Internal function to start new round (used by countdown timer)
+  const startNewRoundInternal = useCallback(async () => {
+    if (!state.room) return
+
+    const newRoundNum = state.currentRoundNum + 1
+
+    try {
+      // Update round number and clear countdown
+      await supabase
+        .from('rooms')
+        .update({
+          current_round: newRoundNum,
+          countdown_end_at: null,
+        })
+        .eq('id', state.room.id)
+    } catch (err) {
+      console.error('Failed to advance round:', err)
+    }
+  }, [state.room, state.currentRoundNum, supabase])
+
   // Countdown timer effect - updates local countdown display every second
   useEffect(() => {
     // Clear any existing timer
@@ -351,27 +371,7 @@ export function useRoom(roomCode: string) {
         countdownTimerRef.current = null
       }
     }
-  }, [state.room?.countdown_end_at])
-
-  // Internal function to start new round (used by countdown timer)
-  const startNewRoundInternal = useCallback(async () => {
-    if (!state.room) return
-
-    const newRoundNum = state.currentRoundNum + 1
-
-    try {
-      // Update round number and clear countdown
-      await supabase
-        .from('rooms')
-        .update({
-          current_round: newRoundNum,
-          countdown_end_at: null,
-        })
-        .eq('id', state.room.id)
-    } catch (err) {
-      console.error('Failed to advance round:', err)
-    }
-  }, [state.room, state.currentRoundNum, supabase])
+  }, [state.room?.countdown_end_at, startNewRoundInternal])
 
   // Refetch room data (for pull-to-refresh)
   const refetch = useCallback(async () => {
@@ -408,7 +408,7 @@ export function useRoom(roomCode: string) {
     toUserId: string,
     amount: number
   ) => {
-    if (!state.room || !user) throw new Error('未加入房间')
+    if (!state.room || !user) throw new Error('not_joined')
 
     // Insert transaction
     const { error: txError } = await supabase.from('transactions').insert({
@@ -432,7 +432,7 @@ export function useRoom(roomCode: string) {
   }, [state.room, state.currentRoundNum, user, supabase])
 
   const startNewRound = useCallback(async () => {
-    if (!state.room) throw new Error('未加入房间')
+    if (!state.room) throw new Error('not_joined')
 
     const newRoundNum = state.currentRoundNum + 1
 
@@ -524,18 +524,17 @@ function saveRoomToHistory(room: Room, profile: Profile) {
 
 // Hook to get room history from localStorage
 export function useRoomHistory() {
-  const [history, setHistory] = useState<RoomHistory[]>([])
-
-  useEffect(() => {
+  const [history, setHistory] = useState<RoomHistory[]>(() => {
     try {
       const historyStr = localStorage.getItem('jizhang_rooms')
       if (historyStr) {
-        setHistory(JSON.parse(historyStr))
+        return JSON.parse(historyStr)
       }
     } catch (e) {
       console.error('Failed to load room history', e)
     }
-  }, [])
+    return []
+  })
 
   const clearHistory = useCallback(() => {
     try {

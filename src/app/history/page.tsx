@@ -4,11 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSupabase } from '@/hooks/useSupabase'
 import { formatAmount } from '@/lib/settlement'
+import { useI18n } from '@/lib/i18n'
 import type { SettlementHistory } from '@/types'
 
 export default function HistoryPage() {
   const router = useRouter()
   const { user, supabase, loading: authLoading } = useSupabase()
+  const { locale, t } = useI18n()
   const [history, setHistory] = useState<SettlementHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -74,6 +76,15 @@ export default function HistoryPage() {
   // Format datetime as MM-DD HH:mm (without year)
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr)
+    if (locale !== 'zh-CN') {
+      return date.toLocaleString(locale, {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    }
+
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hours = String(date.getHours()).padStart(2, '0')
@@ -107,7 +118,7 @@ export default function HistoryPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-500">加载中...</p>
+          <p className="text-gray-500">{t.common.loading}</p>
         </div>
       </div>
     )
@@ -126,7 +137,7 @@ export default function HistoryPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">历史记录</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{t.history.title}</h1>
         </div>
       </header>
 
@@ -138,15 +149,15 @@ export default function HistoryPage() {
             <div className="grid grid-cols-4 gap-2 text-center">
               <div>
                 <div className="text-2xl font-bold text-green-600">{stats.wins}</div>
-                <div className="text-xs text-gray-500">赢</div>
+                <div className="text-xs text-gray-500">{t.history.wins}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-red-600">{stats.losses}</div>
-                <div className="text-xs text-gray-500">输</div>
+                <div className="text-xs text-gray-500">{t.history.losses}</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">{stats.winRate}%</div>
-                <div className="text-xs text-gray-500">胜率</div>
+                <div className="text-xs text-gray-500">{t.history.winRate}</div>
               </div>
               <div>
                 <div className={`text-2xl font-bold ${
@@ -156,9 +167,9 @@ export default function HistoryPage() {
                     ? 'text-red-600'
                     : 'text-gray-400'
                 }`}>
-                  {stats.totalProfit > 0 ? '+' : ''}{formatAmount(stats.totalProfit)}
+                  {stats.totalProfit > 0 ? '+' : ''}{formatAmount(stats.totalProfit, locale)}
                 </div>
-                <div className="text-xs text-gray-500">总盈亏</div>
+                <div className="text-xs text-gray-500">{t.history.totalProfit}</div>
               </div>
             </div>
           </div>
@@ -170,8 +181,8 @@ export default function HistoryPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-lg">暂无历史记录</p>
-            <p className="text-sm mt-1">结算房间后会在这里显示</p>
+            <p className="text-lg">{t.history.emptyTitle}</p>
+            <p className="text-sm mt-1">{t.history.emptyHint}</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -180,7 +191,7 @@ export default function HistoryPage() {
                 {/* Year header - align year text with card's month display */}
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-px bg-gray-200" />
-                  <span className="text-sm font-medium text-gray-500">{year}年</span>
+                  <span className="text-sm font-medium text-gray-500">{t.history.year(year)}</span>
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
@@ -206,7 +217,7 @@ export default function HistoryPage() {
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-xs text-gray-500 whitespace-nowrap">{formatDateTime(record.settled_at)}</span>
-                            <span className="text-xs text-gray-400 whitespace-nowrap">房：{record.room_code}</span>
+                            <span className="text-xs text-gray-400 whitespace-nowrap">{t.history.room(record.room_code)}</span>
                             {myResult && (
                               <span className={`text-xs px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${
                                 isWin
@@ -215,7 +226,7 @@ export default function HistoryPage() {
                                   ? 'bg-red-100 text-red-700'
                                   : 'bg-gray-100 text-gray-500'
                               }`}>
-                                {isWin ? '赢' : isLoss ? '输' : '平'}
+                                {isWin ? t.history.win : isLoss ? t.history.loss : t.history.draw}
                               </span>
                             )}
                           </div>
@@ -228,7 +239,7 @@ export default function HistoryPage() {
                                   ? 'text-red-600'
                                   : 'text-gray-400'
                               }`}>
-                                {myResult.balance > 0 ? '+' : ''}{formatAmount(myResult.balance)}
+                                {myResult.balance > 0 ? '+' : ''}{formatAmount(myResult.balance, locale)}
                               </span>
                             )}
                             <svg
@@ -261,7 +272,7 @@ export default function HistoryPage() {
                                       <span>{player.emoji}</span>
                                       <span className={`font-medium ${isMe ? 'text-emerald-900' : 'text-gray-900'}`}>
                                         {player.name}
-                                        {isMe && <span className="ml-1 text-xs text-emerald-600">(我)</span>}
+                                        {isMe && <span className="ml-1 text-xs text-emerald-600">({t.history.me})</span>}
                                       </span>
                                     </div>
                                     <span className={`font-num font-semibold ${
@@ -271,7 +282,7 @@ export default function HistoryPage() {
                                         ? 'text-red-600'
                                         : 'text-gray-400'
                                     }`}>
-                                      {player.balance > 0 ? '+' : ''}{formatAmount(player.balance)}
+                                      {player.balance > 0 ? '+' : ''}{formatAmount(player.balance, locale)}
                                     </span>
                                   </div>
                                 )

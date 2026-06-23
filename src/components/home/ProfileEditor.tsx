@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { EmojiPicker } from '@/components/ui/EmojiPicker'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useI18n } from '@/lib/i18n'
 import { getRandomNickname } from '@/types'
 
 interface ProfileEditorProps {
@@ -23,6 +24,7 @@ export function ProfileEditor({
   onSuccess,
 }: ProfileEditorProps) {
   const { user, supabase } = useSupabase()
+  const { language, t } = useI18n()
   const [editEmoji, setEditEmoji] = useState(emoji)
   const [editNickname, setEditNickname] = useState(nickname)
   const [saving, setSaving] = useState(false)
@@ -32,10 +34,9 @@ export function ProfileEditor({
     if (isRolling) return
     setIsRolling(true)
 
-    // 快速切换几次名字制造滚动效果
     let count = 0
     const interval = setInterval(() => {
-      setEditNickname(getRandomNickname())
+      setEditNickname(getRandomNickname(language))
       count++
       if (count >= 6) {
         clearInterval(interval)
@@ -73,7 +74,7 @@ export function ProfileEditor({
 
         if (error) {
           console.error('Profile save error:', error)
-          alert('保存失败，请重试')
+          alert(t.errors.profileSaveFailed)
           return
         }
       }
@@ -82,7 +83,7 @@ export function ProfileEditor({
       try {
         localStorage.setItem('jizhang_emoji', editEmoji)
         localStorage.setItem('jizhang_nickname', trimmedNickname)
-      } catch (e) {
+      } catch {
         // Ignore localStorage errors
       }
 
@@ -91,14 +92,14 @@ export function ProfileEditor({
       onClose()
     } catch (err) {
       console.error('Profile save error:', err)
-      alert('保存失败，请重试')
+      alert(t.errors.profileSaveFailed)
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="编辑资料">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.profile.title}>
       <div className="space-y-4">
         {/* Current avatar preview */}
         <div className="flex justify-center">
@@ -113,13 +114,13 @@ export function ProfileEditor({
         {/* Nickname input */}
         <div className="w-full">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            昵称
+            {t.profile.nickname}
           </label>
           <div className="relative">
             <input
               className="w-full px-4 py-3 pr-12 text-base border border-gray-300 rounded-lg transition-colors
                 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              placeholder="输入你的昵称"
+              placeholder={t.profile.nicknamePlaceholder}
               value={editNickname}
               onChange={(e) => setEditNickname(e.target.value)}
               maxLength={20}
@@ -130,7 +131,8 @@ export function ProfileEditor({
               disabled={isRolling}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center
                 text-xl rounded-md hover:bg-gray-100 active:scale-90 transition-all"
-              title="随机昵称"
+              title={t.profile.randomNickname}
+              aria-label={t.profile.randomNickname}
             >
               <span className={isRolling ? 'animate-dice-roll' : ''}>
                 🎲
@@ -147,7 +149,7 @@ export function ProfileEditor({
           disabled={!editNickname.trim() || saving}
           loading={saving}
         >
-          保存
+          {t.profile.save}
         </Button>
       </div>
     </Modal>

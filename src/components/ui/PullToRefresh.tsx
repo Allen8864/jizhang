@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useI18n } from '@/lib/i18n'
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
@@ -12,6 +13,7 @@ const PULL_THRESHOLD = 60
 const MAX_PULL = 100
 
 export function PullToRefresh({ onRefresh, children, className = '' }: PullToRefreshProps) {
+  const { t } = useI18n()
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -149,7 +151,7 @@ export function PullToRefresh({ onRefresh, children, className = '' }: PullToRef
             )}
           </div>
           <span className={`text-xs ${shouldTrigger || isRefreshing ? 'text-emerald-500' : 'text-gray-400'}`}>
-            {isRefreshing ? '刷新中...' : shouldTrigger ? '松开刷新' : '下拉刷新'}
+            {isRefreshing ? t.refresh.refreshing : shouldTrigger ? t.refresh.release : t.refresh.pull}
           </span>
         </div>
       </div>

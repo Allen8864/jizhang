@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-
-// 常用表情符号
+// Common emoji choices.
 const EMOJI_LIST = [
   '😀', '😎', '🤓', '😊', '🥳', '😇', '🤩', '😋',
   '🐶', '🐱', '🐼', '🐨', '🦊', '🦁', '🐯', '🐰',

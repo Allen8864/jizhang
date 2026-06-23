@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
+import { useI18n } from '@/lib/i18n'
 
 interface ActionBarProps {
   onNewRound: () => void
@@ -20,6 +21,7 @@ export function ActionBar({
   onCancelCountdown,
 }: ActionBarProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const { t } = useI18n()
 
   const handleConfirmNewRound = () => {
     onCancelCountdown() // Cancel countdown when manually starting next round
@@ -43,15 +45,15 @@ export function ActionBar({
               className="flex-1 min-h-[44px] px-3 text-center rounded-lg bg-amber-50 border border-amber-200 transition-colors hover:bg-amber-100 flex items-center justify-center gap-1"
             >
               <span className="text-amber-700 font-medium text-sm font-num">
-                <span className="inline-block w-5 text-right">{countdown}</span>s后下一轮
+                {t.room.nextRoundCountdown(countdown)}
               </span>
               <span className="text-amber-500 text-xs">
-                · 取消
+                · {t.common.cancel}
               </span>
             </button>
           ) : (
             <div className="flex-1 min-h-[44px] px-4 text-center text-gray-500 font-medium flex items-center justify-center">
-              第 {currentRoundNum} 轮
+              {t.room.roundLabel(currentRoundNum)}
             </div>
           )}
 
@@ -62,7 +64,7 @@ export function ActionBar({
             className="flex-1"
             onClick={() => setShowConfirmModal(true)}
           >
-            下一轮
+            {t.room.nextRound}
           </Button>
         </div>
       </div>
@@ -71,10 +73,10 @@ export function ActionBar({
       <Modal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
-        title="确认下一轮"
+        title={t.room.confirmNextRoundTitle}
       >
         <p className="text-gray-600 mb-6">
-          确定要开始第 {currentRoundNum + 1} 轮吗？
+          {t.room.confirmNextRoundBody(currentRoundNum + 1)}
         </p>
         <div className="flex gap-3">
           <Button
@@ -82,14 +84,14 @@ export function ActionBar({
             className="flex-1"
             onClick={() => setShowConfirmModal(false)}
           >
-            取消
+            {t.common.cancel}
           </Button>
           <Button
             variant="primary"
             className="flex-1"
             onClick={handleConfirmNewRound}
           >
-            确认
+            {t.common.confirm}
           </Button>
         </div>
       </Modal>

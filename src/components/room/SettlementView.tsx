@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { calculateBalances, calculateSettlement, formatAmount } from '@/lib/settlement'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useI18n } from '@/lib/i18n'
 import type { Profile, Transaction, Room, PlayerResult } from '@/types'
 
 interface SettlementViewProps {
@@ -25,6 +26,7 @@ export function SettlementView({
 }: SettlementViewProps) {
   const router = useRouter()
   const { user, supabase } = useSupabase()
+  const { locale, t } = useI18n()
   const [settling, setSettling] = useState(false)
   const [error, setError] = useState('')
 
@@ -94,18 +96,18 @@ export function SettlementView({
       router.push('/')
     } catch (err) {
       console.error('Settlement error:', err)
-      setError(err instanceof Error ? err.message : '结算失败')
+      setError(err instanceof Error ? err.message : t.errors.settlementFailed)
     } finally {
       setSettling(false)
     }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="结算">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.settlement.title}>
       <div className="space-y-6">
         {/* Balance summary */}
         <div>
-          <h3 className="text-sm font-medium text-gray-500 mb-3">当前战绩</h3>
+          <h3 className="text-sm font-medium text-gray-500 mb-3">{t.settlement.currentStats}</h3>
           <div className="space-y-2">
             {sortedBalances.map(bal => {
               const player = playerMap.get(bal.userId)
@@ -125,7 +127,7 @@ export function SettlementView({
                       ? 'text-red-600'
                       : 'text-gray-400'
                   }`}>
-                    {bal.balance > 0 ? '+' : ''}{formatAmount(bal.balance)}
+                    {bal.balance > 0 ? '+' : ''}{formatAmount(bal.balance, locale)}
                   </span>
                 </div>
               )
@@ -137,7 +139,7 @@ export function SettlementView({
         {settlements.length > 0 ? (
           <div>
             <h3 className="text-sm font-medium text-gray-500 mb-3">
-              结算方案
+              {t.settlement.plan}
             </h3>
             <div className="space-y-2">
               {settlements.map((transfer, index) => {
@@ -161,7 +163,7 @@ export function SettlementView({
                       </span>
                     </div>
                     <span className="font-num font-bold text-lg text-gray-900">
-                      {formatAmount(transfer.amount)}
+                      {formatAmount(transfer.amount, locale)}
                     </span>
                   </div>
                 )
@@ -171,9 +173,9 @@ export function SettlementView({
         ) : (
           <div className="text-center py-8 text-gray-400">
             {transactions.length === 0 ? (
-              <p>暂无记录</p>
+              <p>{t.settlement.empty}</p>
             ) : (
-              <p>已经结清了！</p>
+              <p>{t.settlement.settled}</p>
             )}
           </div>
         )}
@@ -190,7 +192,7 @@ export function SettlementView({
           onClick={handleSettle}
           loading={settling}
         >
-          确认结算并关闭房间
+          {t.settlement.confirm}
         </Button>
       </div>
     </Modal>

@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import type { Profile, Transaction } from '@/types'
 import { formatBalance } from '@/lib/settlement'
+import { useI18n } from '@/lib/i18n'
 
 interface GameRoundTableProps {
   players: Profile[]
@@ -21,6 +22,8 @@ export function GameRoundTable({
   currentRoundNum,
   currentUserId,
 }: GameRoundTableProps) {
+  const { locale, t } = useI18n()
+
   // Calculate net amount for each player in each round
   const roundData = useMemo(() => {
     // Always show rounds from 1 to currentRoundNum, even if some rounds have no transactions
@@ -54,7 +57,7 @@ export function GameRoundTable({
   if (players.length === 0) {
     return (
       <div className="text-center text-gray-400 py-8">
-        暂无玩家
+        {t.room.noPlayers}
       </div>
     )
   }
@@ -73,7 +76,7 @@ export function GameRoundTable({
           <thead>
             <tr className="border-b border-gray-100">
               <th className="sticky left-0 z-10 bg-gray-50 px-1 py-2 text-[10px] text-gray-400 font-normal" style={{ writingMode: 'vertical-rl' }}>
-                轮次
+                {t.room.round}
               </th>
               {players.map(player => (
                 <th
@@ -126,7 +129,7 @@ export function GameRoundTable({
                             : 'text-gray-400'
                         }
                       >
-                        {amount === 0 ? '0' : formatBalance(amount)}
+                        {amount === 0 ? '0' : formatBalance(amount, locale)}
                       </span>
                     </td>
                   )

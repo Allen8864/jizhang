@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useI18n, type Language } from '@/lib/i18n'
 import type { Room, Transaction } from '@/types'
 
 type TimerOption = 'manual' | '30' | '60' | '90'
@@ -43,6 +44,7 @@ export function RoomSettingsModal({
 }: RoomSettingsModalProps) {
   const router = useRouter()
   const { user, supabase } = useSupabase()
+  const { language, setLanguage, t } = useI18n()
   const [leaving, setLeaving] = useState(false)
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
@@ -50,10 +52,15 @@ export function RoomSettingsModal({
   const timerOption = getTimerOption(room.countdown_seconds)
 
   const timerOptions: { value: TimerOption; label: string }[] = [
-    { value: 'manual', label: '手动' },
-    { value: '30', label: '30秒' },
-    { value: '60', label: '60秒' },
-    { value: '90', label: '90秒' },
+    { value: 'manual', label: t.settings.manual },
+    { value: '30', label: t.settings.seconds(30) },
+    { value: '60', label: t.settings.seconds(60) },
+    { value: '90', label: t.settings.seconds(90) },
+  ]
+
+  const languageOptions: { value: Language; label: string }[] = [
+    { value: 'zh', label: t.common.chinese },
+    { value: 'en', label: t.common.english },
   ]
 
   const handleTimerChange = async (option: TimerOption) => {
@@ -106,15 +113,52 @@ export function RoomSettingsModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="房间设置">
+    <Modal isOpen={isOpen} onClose={onClose} title={t.settings.title}>
       <div className="space-y-6">
+        {/* Language Options */}
+        <div>
+          <h3 className="text-sm font-medium text-gray-700 mb-1">{t.common.language}</h3>
+          <p className="text-xs text-gray-400 mb-3">
+            {t.settings.languageDescription}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {languageOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
+                  language === option.value
+                    ? 'bg-emerald-50 border-2 border-emerald-400'
+                    : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="language"
+                  value={option.value}
+                  checked={language === option.value}
+                  onChange={() => setLanguage(option.value)}
+                  className="sr-only"
+                />
+                <span className={`font-medium ${
+                  language === option.value ? 'text-emerald-700' : 'text-gray-700'
+                }`}>
+                  {option.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-200" />
+
         {/* Timer Options */}
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-1">自动下一轮</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-1">{t.settings.autoNextRound}</h3>
           <p className="text-xs text-gray-400 mb-3">
             {timerOption === 'manual'
-              ? '手动进入下一轮'
-              : `产生转账记录后无操作 ${timerOption} 秒进入下一轮`}
+              ? t.settings.manualDescription
+              : t.settings.autoDescription(timerOption)}
           </p>
           <div className="grid grid-cols-2 gap-2">
             {timerOptions.map((option) => (
@@ -156,7 +200,7 @@ export function RoomSettingsModal({
             onClick={handleSettlement}
             disabled={transactions.length === 0}
           >
-            结算
+            {t.settings.settle}
           </Button>
 
           <Button
@@ -165,7 +209,7 @@ export function RoomSettingsModal({
             className="w-full text-red-600 hover:bg-red-50"
             onClick={() => setShowLeaveConfirm(true)}
           >
-            退出房间
+            {t.settings.leaveRoom}
           </Button>
         </div>
       </div>
@@ -174,16 +218,16 @@ export function RoomSettingsModal({
       <Modal
         isOpen={showLeaveConfirm}
         onClose={() => setShowLeaveConfirm(false)}
-        title="退出房间"
+        title={t.settings.leaveTitle}
       >
-        <p className="text-gray-600 mb-6">确定要退出房间吗？</p>
+        <p className="text-gray-600 mb-6">{t.settings.leaveConfirm}</p>
         <div className="flex gap-3">
           <Button
             variant="ghost"
             className="flex-1"
             onClick={() => setShowLeaveConfirm(false)}
           >
-            取消
+            {t.common.cancel}
           </Button>
           <Button
             variant="danger"
@@ -191,7 +235,7 @@ export function RoomSettingsModal({
             onClick={handleLeaveRoom}
             loading={leaving}
           >
-            确认退出
+            {t.settings.confirmLeave}
           </Button>
         </div>
       </Modal>
