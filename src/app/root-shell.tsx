@@ -8,7 +8,6 @@ import {
   SITE_SHORT_NAME,
   getSiteUrl,
 } from "@/lib/site"
-import "./globals.css"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,7 +19,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
-export const metadata: Metadata = {
+export const rootMetadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: SITE_DEFAULT_TITLE,
   description: SITE_DESCRIPTION,
@@ -47,20 +46,22 @@ export const metadata: Metadata = {
   },
 }
 
-export const viewport: Viewport = {
+export const rootViewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
   themeColor: "#ffffff",
 }
 
-export default function RootLayout({
+export function RootDocument({
   children,
+  lang,
 }: Readonly<{
   children: React.ReactNode
+  lang: string
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang={lang}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased font-sans`}
       >
