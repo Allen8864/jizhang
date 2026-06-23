@@ -75,8 +75,10 @@ export function GameRoundTable({
           {/* Header row with player avatars and names */}
           <thead>
             <tr className="border-b border-gray-100">
-              <th className="sticky left-0 z-10 bg-gray-50 px-1 py-2 text-[10px] text-gray-400 font-normal" style={{ writingMode: 'vertical-rl' }}>
-                {t.room.round}
+              <th className="sticky left-0 z-10 bg-gray-50 p-0 text-[10px] text-gray-400 font-normal align-middle">
+                <span className="mx-auto flex h-14 w-6 items-center justify-center" style={{ writingMode: 'vertical-rl' }}>
+                  {t.room.round}
+                </span>
               </th>
               {players.map(player => (
                 <th
@@ -108,8 +110,10 @@ export function GameRoundTable({
                 key={`round-${round.roundNum}`}
                 className="border-b border-gray-50"
               >
-                <td className="sticky left-0 z-10 bg-white px-2 py-2 text-xs text-gray-400 text-center">
-                  {round.roundNum}
+                <td className="sticky left-0 z-10 bg-white p-0 text-xs text-gray-400 text-center align-middle">
+                  <span className="mx-auto flex h-10 w-6 items-center justify-center">
+                    {round.roundNum}
+                  </span>
                 </td>
                 {players.map(player => {
                   const amount = round.amounts[player.user_id] || 0

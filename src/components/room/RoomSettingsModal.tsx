@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { useSupabase } from '@/hooks/useSupabase'
-import { useI18n, type Language } from '@/lib/i18n'
+import { useI18n } from '@/lib/i18n'
 import type { Room, Transaction } from '@/types'
 
 type TimerOption = 'manual' | '30' | '60' | '90'
@@ -56,11 +57,6 @@ export function RoomSettingsModal({
     { value: '30', label: t.settings.seconds(30) },
     { value: '60', label: t.settings.seconds(60) },
     { value: '90', label: t.settings.seconds(90) },
-  ]
-
-  const languageOptions: { value: Language; label: string }[] = [
-    { value: 'zh', label: t.common.chinese },
-    { value: 'en', label: t.common.english },
   ]
 
   const handleTimerChange = async (option: TimerOption) => {
@@ -114,77 +110,48 @@ export function RoomSettingsModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t.settings.title}>
-      <div className="space-y-6">
-        {/* Language Options */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-1">{t.common.language}</h3>
-          <p className="text-xs text-gray-400 mb-3">
-            {t.settings.languageDescription}
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {languageOptions.map((option) => (
-              <label
-                key={option.value}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
-                  language === option.value
-                    ? 'bg-emerald-50 border-2 border-emerald-400'
-                    : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="language"
-                  value={option.value}
-                  checked={language === option.value}
-                  onChange={() => setLanguage(option.value)}
-                  className="sr-only"
-                />
-                <span className={`font-medium ${
-                  language === option.value ? 'text-emerald-700' : 'text-gray-700'
-                }`}>
-                  {option.label}
-                </span>
-              </label>
-            ))}
+      <div className="space-y-5">
+        <div className="space-y-4">
+          {/* Language Options */}
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="text-sm font-medium text-gray-700">{t.common.language}</h3>
+            <LanguageSwitcher value={language} onChange={setLanguage} />
           </div>
-        </div>
 
-        {/* Divider */}
-        <div className="border-t border-gray-200" />
-
-        {/* Timer Options */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-1">{t.settings.autoNextRound}</h3>
-          <p className="text-xs text-gray-400 mb-3">
-            {timerOption === 'manual'
-              ? t.settings.manualDescription
-              : t.settings.autoDescription(timerOption)}
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            {timerOptions.map((option) => (
-              <label
-                key={option.value}
-                className={`flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
-                  timerOption === option.value
-                    ? 'bg-emerald-50 border-2 border-emerald-400'
-                    : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="timer"
-                  value={option.value}
-                  checked={timerOption === option.value}
-                  onChange={() => handleTimerChange(option.value)}
-                  className="sr-only"
-                />
-                <span className={`font-medium ${
-                  timerOption === option.value ? 'text-emerald-700' : 'text-gray-700'
-                }`}>
-                  {option.label}
-                </span>
-              </label>
-            ))}
+          {/* Timer Options */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 mb-1">{t.settings.autoNextRound}</h3>
+            <p className="text-xs text-gray-400 mb-3">
+              {timerOption === 'manual'
+                ? t.settings.manualDescription
+                : t.settings.autoDescription(timerOption)}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {timerOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${
+                    timerOption === option.value
+                      ? 'bg-emerald-50 border-2 border-emerald-400'
+                      : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="timer"
+                    value={option.value}
+                    checked={timerOption === option.value}
+                    onChange={() => handleTimerChange(option.value)}
+                    className="sr-only"
+                  />
+                  <span className={`font-medium ${
+                    timerOption === option.value ? 'text-emerald-700' : 'text-gray-700'
+                  }`}>
+                    {option.label}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 

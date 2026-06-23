@@ -197,7 +197,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="relative pt-12 pb-20 text-center">
-        <div className="absolute right-4 top-4">
+        <div className="absolute left-1/2 top-4 w-full max-w-md -translate-x-1/2 px-4 flex justify-end">
           <LanguageSwitcher />
         </div>
         <h1 className="text-3xl font-bold text-gray-900">{t.common.appName}</h1>

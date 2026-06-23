@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { LanguageProvider } from "@/lib/i18n"
-import "motion-icons-react/style.css"
 import "./globals.css"
 
 const geistSans = Geist({
