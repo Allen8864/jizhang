@@ -124,7 +124,7 @@ export function JoinRoomModal({
           placeholder={t.joinRoom.placeholder}
           value={roomCode}
           onChange={handleCodeChange}
-          className="text-center text-2xl tracking-[0.3em] font-num"
+          className="text-center text-2xl tracking-[0.3em] placeholder:tracking-normal font-num"
           maxLength={4}
           inputMode="numeric"
           autoFocus
