@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -20,11 +19,14 @@ export function JoinRoomModal({
   nickname,
   emoji,
 }: JoinRoomModalProps) {
-  const router = useRouter()
   const { user, supabase } = useSupabase()
   const [roomCode, setRoomCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const navigateToRoom = (code: string) => {
+    window.location.assign(`/room/${code}`)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +45,18 @@ export function JoinRoomModal({
     setError('')
 
     try {
+      // Check if room exists first, so an existing membership in the same room
+      // can recover from a previous navigation that did not complete.
+      const { data: room, error: roomError } = await supabase
+        .from('rooms')
+        .select('id, code')
+        .eq('code', code)
+        .single()
+
+      if (roomError || !room) {
+        throw new Error('房间不存在，请检查房间号')
+      }
+
       // Check if user is already in a room
       const { data: currentProfile } = await supabase
         .from('profiles')
@@ -51,6 +65,12 @@ export function JoinRoomModal({
         .single()
 
       if (currentProfile?.current_room_id) {
+        if (currentProfile.current_room_id === room.id) {
+          onClose()
+          navigateToRoom(room.code)
+          return
+        }
+
         // Get the room code of the current room
         const { data: currentRoom } = await supabase
           .from('rooms')
@@ -61,17 +81,6 @@ export function JoinRoomModal({
         if (currentRoom) {
           throw new Error(`你已在房间 ${currentRoom.code} 中，请先离开当前房间`)
         }
-      }
-
-      // Check if room exists
-      const { data: room, error: roomError } = await supabase
-        .from('rooms')
-        .select('id')
-        .eq('code', code)
-        .single()
-
-      if (roomError || !room) {
-        throw new Error('房间不存在，请检查房间号')
       }
 
       // Upsert profile with current_room_id
@@ -90,7 +99,7 @@ export function JoinRoomModal({
       if (profileError) throw profileError
 
       onClose()
-      router.push(`/room/${code}`)
+      navigateToRoom(room.code)
     } catch (err) {
       console.error('Join room error:', err)
       setError(err instanceof Error ? err.message : '加入房间失败')
