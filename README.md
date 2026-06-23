@@ -78,6 +78,7 @@ Although it started from a private mahjong scenario, the same flow works for pok
    ```env
    NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+   NEXT_PUBLIC_SITE_URL=https://jizhang.s-yc.com
    ```
 
 4. Enable anonymous auth in Supabase:
@@ -113,6 +114,7 @@ Although it started from a private mahjong scenario, the same flow works for pok
    ```env
    NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+   NEXT_PUBLIC_SITE_URL=https://jizhang.s-yc.com
    ```
 
 4. Deploy.
@@ -128,6 +130,9 @@ Add these repository secrets in GitHub:
 | `APP_URL` | The deployed app URL, for example `https://jizhang.example.com` or the Vercel production URL |
 | `SUPABASE_URL` | Supabase project URL, for example `https://your-project-id.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key used only by GitHub Actions |
+
+SEO metadata, canonical URLs, Open Graph images, and the sitemap use `NEXT_PUBLIC_SITE_URL`.
+Set it to the production domain, for example `https://jizhang.s-yc.com`.
 
 Workflows:
 

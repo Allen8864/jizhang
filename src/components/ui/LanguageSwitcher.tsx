@@ -8,6 +8,9 @@ interface LanguageSwitcherProps {
   className?: string
 }
 
+const cx = (...classes: Array<string | false | undefined>) =>
+  classes.filter(Boolean).join(' ')
+
 export function LanguageSwitcher({
   value,
   onChange,
@@ -27,12 +30,18 @@ export function LanguageSwitcher({
 
   return (
     <div
-      className={`language-switcher-control ${className}`}
+      className={cx(
+        'relative block h-[34px] w-20 overflow-hidden rounded-full border border-transparent bg-gray-100',
+        className,
+      )}
       role="radiogroup"
       aria-label={t.common.switchLanguage}
     >
       <span
-        className={`language-switcher-thumb ${selectedLanguage === 'en' ? 'language-switcher-thumb-en' : ''}`}
+        className={cx(
+          'absolute left-0.5 top-0.5 h-7 w-[37px] rounded-full border border-gray-200 bg-white transition-transform duration-200 ease-out',
+          selectedLanguage === 'en' && 'translate-x-[37px]',
+        )}
         aria-hidden="true"
       />
       <button
@@ -42,9 +51,10 @@ export function LanguageSwitcher({
         onClick={() => {
           if (selectedLanguage !== 'zh') handleChange()
         }}
-        className={`language-switcher-choice language-switcher-choice-zh ${
-          selectedLanguage === 'zh' ? 'language-switcher-choice-active' : ''
-        }`}
+        className={cx(
+          'absolute left-0.5 top-0.5 z-[1] grid h-7 w-[37px] appearance-none place-items-center rounded-full border-0 bg-transparent p-0 text-[13px] font-bold leading-none tracking-normal transition-colors duration-200 ease-in',
+          selectedLanguage === 'zh' ? 'text-emerald-600' : 'text-gray-500',
+        )}
       >
         中
       </button>
@@ -55,9 +65,10 @@ export function LanguageSwitcher({
         onClick={() => {
           if (selectedLanguage !== 'en') handleChange()
         }}
-        className={`language-switcher-choice language-switcher-choice-en ${
-          selectedLanguage === 'en' ? 'language-switcher-choice-active' : ''
-        }`}
+        className={cx(
+          'absolute left-[39px] top-0.5 z-[1] grid h-7 w-[37px] appearance-none place-items-center rounded-full border-0 bg-transparent p-0 text-[13px] font-bold leading-none tracking-normal transition-colors duration-200 ease-in',
+          selectedLanguage === 'en' ? 'text-emerald-600' : 'text-gray-500',
+        )}
       >
         EN
       </button>
