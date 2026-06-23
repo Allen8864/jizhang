@@ -56,9 +56,7 @@
 .hero-brand,
 .hero-nav-links,
 .hero-language,
-.hero-actions,
 .hero-proof,
-.hero-join-row,
 .hero-device-top,
 .hero-round-strip,
 .hero-player,
@@ -131,7 +129,7 @@
   border-radius: 6px;
 }
 
-.hero-language a.is-active {
+.hero-language a.isActive {
   background: #fff8ea;
   color: #134437;
 }
@@ -195,105 +193,6 @@
   color: #fff8ea;
   font-size: 13px;
   font-weight: 800;
-}
-
-.hero-actions {
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 30px;
-}
-
-.hero-primary-cta,
-.hero-secondary-cta,
-.hero-join-button {
-  min-height: 48px;
-  border-radius: 8px;
-  font-weight: 900;
-  text-decoration: none;
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
-}
-
-.hero-primary-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 18px;
-  border: 1px solid #f5b840;
-  background: #f5b840;
-  color: #17140e;
-  box-shadow: 0 18px 40px rgba(245, 184, 64, 0.24);
-}
-
-.hero-secondary-cta {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 248, 234, 0.25);
-  background: rgba(255, 248, 234, 0.08);
-  color: #fff8ea;
-}
-
-.hero-primary-cta:hover,
-.hero-secondary-cta:hover,
-.hero-join-button:hover {
-  transform: translateY(-1px);
-}
-
-.hero-join-form {
-  width: min(100%, 520px);
-  margin-top: 24px;
-}
-
-.hero-join-label {
-  display: block;
-  margin-bottom: 8px;
-  color: rgba(255, 248, 234, 0.74);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.hero-join-row {
-  gap: 8px;
-}
-
-.hero-join-input {
-  width: 132px;
-  height: 48px;
-  border: 1px solid rgba(255, 248, 234, 0.26);
-  border-radius: 8px;
-  outline: 0;
-  background: rgba(255, 248, 234, 0.1);
-  color: #fffdf6;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1;
-  text-align: center;
-}
-
-.hero-join-input::placeholder {
-  color: rgba(255, 248, 234, 0.34);
-}
-
-.hero-join-input:focus {
-  border-color: #f5b840;
-}
-
-.hero-join-button {
-  border: 1px solid rgba(255, 248, 234, 0.22);
-  background: #fff8ea;
-  color: #173b30;
-  padding: 0 16px;
-}
-
-.hero-join-error {
-  margin: 8px 0 0;
-  color: #fecaca;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .hero-stage {
@@ -866,41 +765,6 @@
     font-size: 12px;
   }
 
-  .hero-actions {
-    margin-top: 14px;
-    gap: 10px;
-  }
-
-  .hero-primary-cta,
-  .hero-secondary-cta,
-  .hero-join-button {
-    min-height: 46px;
-  }
-
-  .hero-primary-cta,
-  .hero-secondary-cta {
-    flex: 1 1 150px;
-    justify-content: center;
-  }
-
-  .hero-join-form {
-    margin-top: 12px;
-  }
-
-  .hero-join-row {
-    align-items: stretch;
-  }
-
-  .hero-join-input {
-    flex: 0 0 112px;
-    width: 112px;
-  }
-
-  .hero-join-button {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
   .hero-stage {
     display: none;
   }
@@ -1016,9 +880,4 @@
     animation: none;
   }
 
-  .hero-primary-cta,
-  .hero-secondary-cta,
-  .hero-join-button {
-    transition: none;
-  }
 }
