@@ -5,6 +5,7 @@ import {
   getOgImageUrl,
   getSiteUrl,
 } from './site'
+import { HERO_PREVIEW_EMOJIS } from './emoji'
 import { publicRobots } from './seo'
 
 export const HERO_LOCALES = ['en', 'zh'] as const
@@ -133,21 +134,21 @@ export const heroContent: Record<HeroLocale, HeroContent> = {
       roomCodeLabel: 'Room code',
       roomCode: '4826',
       live: 'Live sync',
-      round: 'Round 6',
+      round: 'Round 3',
       tableTitle: 'Score board',
       settlementTitle: 'Automatic settlement',
       settlementHint: 'Minimum transfers calculated instantly',
       transfer: 'Alex pays Mia 24',
       players: [
-        { emoji: '🀄', name: 'Mia', amount: '+86', tone: 'positive' },
-        { emoji: '♠️', name: 'Alex', amount: '-42', tone: 'negative' },
-        { emoji: '🎲', name: 'Noah', amount: '+18', tone: 'positive' },
-        { emoji: '♦️', name: 'Ivy', amount: '-62', tone: 'negative' },
+        { emoji: HERO_PREVIEW_EMOJIS[0], name: 'Mia', amount: '+86', tone: 'positive' },
+        { emoji: HERO_PREVIEW_EMOJIS[1], name: 'Alex', amount: '-42', tone: 'negative' },
+        { emoji: HERO_PREVIEW_EMOJIS[2], name: 'Noah', amount: '+18', tone: 'positive' },
+        { emoji: HERO_PREVIEW_EMOJIS[3], name: 'Ivy', amount: '-62', tone: 'negative' },
       ],
       rounds: [
-        { label: 'R4', east: '+18', south: '-12', west: '+6', north: '-12' },
-        { label: 'R5', east: '+32', south: '-18', west: '0', north: '-14' },
-        { label: 'R6', east: '+36', south: '-12', west: '+12', north: '-36' },
+        { label: 'R1', east: '+18', south: '-12', west: '+6', north: '-12' },
+        { label: 'R2', east: '+32', south: '-18', west: '0', north: '-14' },
+        { label: 'R3', east: '+36', south: '-12', west: '+12', north: '-36' },
       ],
     },
     metrics: [
@@ -286,21 +287,21 @@ export const heroContent: Record<HeroLocale, HeroContent> = {
       roomCodeLabel: '房间号',
       roomCode: '4826',
       live: '实时同步',
-      round: '第 6 轮',
-      tableTitle: '本局战绩',
+      round: '第 3 轮',
+      tableTitle: '牌局战绩',
       settlementTitle: '自动结算',
       settlementHint: '自动生成最少转账方案',
       transfer: '阿南 转给 小林 24',
       players: [
-        { emoji: '🀄', name: '小林', amount: '+86', tone: 'positive' },
-        { emoji: '♠️', name: '阿南', amount: '-42', tone: 'negative' },
-        { emoji: '🎲', name: '可乐', amount: '+18', tone: 'positive' },
-        { emoji: '♦️', name: '小雨', amount: '-62', tone: 'negative' },
+        { emoji: HERO_PREVIEW_EMOJIS[0], name: '小林', amount: '+86', tone: 'positive' },
+        { emoji: HERO_PREVIEW_EMOJIS[1], name: '阿南', amount: '-42', tone: 'negative' },
+        { emoji: HERO_PREVIEW_EMOJIS[2], name: '可乐', amount: '+18', tone: 'positive' },
+        { emoji: HERO_PREVIEW_EMOJIS[3], name: '小雨', amount: '-62', tone: 'negative' },
       ],
       rounds: [
-        { label: '4', east: '+18', south: '-12', west: '+6', north: '-12' },
-        { label: '5', east: '+32', south: '-18', west: '0', north: '-14' },
-        { label: '6', east: '+36', south: '-12', west: '+12', north: '-36' },
+        { label: '1', east: '+18', south: '-12', west: '+6', north: '-12' },
+        { label: '2', east: '+32', south: '-18', west: '0', north: '-14' },
+        { label: '3', east: '+36', south: '-12', west: '+12', north: '-36' },
       ],
     },
     metrics: [

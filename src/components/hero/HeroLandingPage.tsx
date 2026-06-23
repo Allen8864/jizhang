@@ -1,13 +1,14 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { RoomCodeJoinForm } from './RoomCodeJoinForm'
 import styles from './HeroLandingPage.module.css'
+import { LanguageSegmentedControl } from '@/components/ui/LanguageSegmentedControl'
 import { createHeroJsonLd, heroContent, type HeroLocale } from '@/lib/hero'
 
 interface HeroLandingPageProps {
   locale: HeroLocale
   canonicalPath: string
-  adaptive?: boolean
 }
 
 const delayStyle = (index: number) => ({
@@ -18,24 +19,36 @@ const h = (...classes: Array<string | false | undefined>) =>
   classes.filter(Boolean).map((className) => styles[className as string]).join(' ')
 
 const primaryCtaClass =
-  'inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#f5b840] bg-[#f5b840] px-[18px] font-black text-[#17140e] no-underline shadow-[0_18px_40px_rgba(245,184,64,0.24)] motion-safe:transition-transform motion-safe:hover:-translate-y-px max-[620px]:min-h-[46px] max-[620px]:flex-1 max-[620px]:basis-[150px] max-[620px]:justify-center'
+  'inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#10b981] bg-[#10b981] px-[18px] font-black text-white no-underline shadow-[0_18px_40px_rgba(16,185,129,0.24)] motion-safe:transition-transform motion-safe:hover:-translate-y-px motion-safe:hover:bg-[#059669] max-[620px]:min-h-[46px] max-[620px]:flex-1 max-[620px]:basis-[150px] max-[620px]:justify-center'
 
 const secondaryCtaClass =
-  'inline-flex min-h-12 items-center rounded-lg border border-[rgba(255,248,234,0.25)] bg-[rgba(255,248,234,0.08)] px-[18px] font-black text-[#fff8ea] no-underline motion-safe:transition-transform motion-safe:hover:-translate-y-px max-[620px]:min-h-[46px] max-[620px]:flex-1 max-[620px]:basis-[150px] max-[620px]:justify-center'
+  'inline-flex min-h-12 items-center rounded-lg border border-[rgba(236,253,245,0.25)] bg-[rgba(236,253,245,0.08)] px-[18px] font-black text-[#ecfdf5] no-underline motion-safe:transition-transform motion-safe:hover:-translate-y-px max-[620px]:min-h-[46px] max-[620px]:flex-1 max-[620px]:basis-[150px] max-[620px]:justify-center'
 
-const toneClass = {
-  positive: 'text-emerald-300',
-  negative: 'text-rose-300',
-  neutral: 'text-stone-300',
-}
+const tableAmountClass = (amount: string, isCurrent = false) =>
+  h(
+    'hero-room-table-amount',
+    isCurrent && 'is-current',
+    amount.startsWith('+') && 'is-positive',
+    amount.startsWith('-') && 'is-negative',
+  )
 
 export function HeroLandingPage({
   locale,
   canonicalPath,
-  adaptive = false,
 }: HeroLandingPageProps) {
   const content = heroContent[locale]
   const jsonLd = createHeroJsonLd(locale, canonicalPath)
+  const playerCountLabel = locale === 'zh'
+    ? `(${content.preview.players.length}人)`
+    : `(${content.preview.players.length})`
+  const roomTitle = locale === 'zh'
+    ? `房间 ${content.preview.roomCode}`
+    : `Room ${content.preview.roomCode}`
+  const roundHeading = locale === 'zh' ? '轮次' : 'Round'
+  const gameTabLabel = locale === 'zh' ? '牌局' : 'Game'
+  const historyTabLabel = locale === 'zh' ? '历史' : 'History'
+  const addFriendLabel = locale === 'zh' ? '加好友' : 'Invite'
+  const nextRoundLabel = locale === 'zh' ? '下一轮' : 'Next round'
 
   return (
     <main className={h('hero-page')} lang={content.htmlLang}>
@@ -47,7 +60,16 @@ export function HeroLandingPage({
       <section className={h('hero-shell')} aria-labelledby="hero-title">
         <nav className={h('hero-nav')} aria-label="Hero navigation">
           <Link className={h('hero-brand')} href="/hero">
-            <span className={h('hero-brand-mark')} aria-hidden="true">計</span>
+            <Image
+              className={h('hero-brand-mark')}
+              src="/icons/icon.svg"
+              alt=""
+              width={36}
+              height={36}
+              priority
+              unoptimized
+              aria-hidden="true"
+            />
             <span>{content.brand}</span>
           </Link>
 
@@ -57,22 +79,15 @@ export function HeroLandingPage({
             <a href="#faq">{content.navFaq}</a>
           </div>
 
-          <div className={h('hero-language')} aria-label={content.languageLabel}>
-            <Link
-              href="/hero/zh"
-              className={h(!adaptive && locale === 'zh' && 'isActive')}
-              hrefLang="zh-CN"
-            >
-              中
-            </Link>
-            <Link
-              href="/hero/en"
-              className={h(!adaptive && locale === 'en' && 'isActive')}
-              hrefLang="en"
-            >
-              EN
-            </Link>
-          </div>
+          <LanguageSegmentedControl
+            value={locale}
+            ariaLabel={content.languageLabel}
+            tone="dark"
+            links={{
+              zh: { href: '/hero/zh', hrefLang: 'zh-CN' },
+              en: { href: '/hero/en', hrefLang: 'en' },
+            }}
+          />
         </nav>
 
         <div className={h('hero-grid')}>
@@ -97,8 +112,8 @@ export function HeroLandingPage({
                 <strong>{content.preview.players[0].amount}</strong>
               </div>
               <div>
-                <span>{content.preview.settlementTitle}</span>
-                <strong>{content.preview.transfer}</strong>
+                <span>{content.preview.tableTitle}</span>
+                <strong>{nextRoundLabel}</strong>
               </div>
             </div>
 
@@ -121,74 +136,88 @@ export function HeroLandingPage({
           </div>
 
           <div className={h('hero-stage')} aria-label={content.preview.tableTitle}>
-            <div className={h('hero-tabletop')} aria-hidden="true">
-              <div className={h('hero-tile', 'hero-tile-one')}>🀄</div>
-              <div className={h('hero-tile', 'hero-tile-two')}>♠</div>
-              <div className={h('hero-tile', 'hero-tile-three')}>●</div>
-            </div>
-
-            <div className={h('hero-device')}>
-              <div className={h('hero-device-top')}>
-                <div>
-                  <span>{content.preview.roomCodeLabel}</span>
-                  <strong>{content.preview.roomCode}</strong>
-                </div>
-                <div className={h('hero-live-pill')}>
-                  <span aria-hidden="true" />
-                  {content.preview.live}
-                </div>
-              </div>
-
-              <div className={h('hero-round-strip')}>
-                <span>{content.preview.round}</span>
-                <strong>{content.preview.tableTitle}</strong>
-              </div>
-
-              <div className={h('hero-player-grid')}>
-                {content.preview.players.map((player, index) => (
-                  <div className={h('hero-player')} key={player.name} style={delayStyle(index)}>
-                    <span className={h('hero-player-emoji')}>{player.emoji}</span>
-                    <span>{player.name}</span>
-                    <strong className={toneClass[player.tone]}>{player.amount}</strong>
+            <div className={h('hero-room-phone')}>
+              <div className={h('hero-room-screen')}>
+                <header className={h('hero-room-header')}>
+                  <div className={h('hero-room-title')}>
+                    <strong>{roomTitle}</strong>
+                    <span>{playerCountLabel}</span>
+                    <i aria-hidden="true" />
                   </div>
-                ))}
-              </div>
+                  <div className={h('hero-room-actions')} aria-hidden="true">
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </span>
+                    <span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </span>
+                  </div>
+                </header>
 
-              <div className={h('hero-score-table')}>
-                <div className={h('hero-score-head')}>
+                <div className={h('hero-room-players')}>
+                  {content.preview.players.map((player, index) => (
+                    <div
+                      className={h('hero-room-player', index === 0 && 'is-current')}
+                      key={player.name}
+                      style={delayStyle(index)}
+                    >
+                      <span className={h('hero-room-avatar')}>{player.emoji}</span>
+                      <span className={h('hero-room-player-name')}>{player.name}</span>
+                      <strong className={h(
+                        'hero-room-player-amount',
+                        player.tone === 'positive' && 'is-positive',
+                        player.tone === 'negative' && 'is-negative',
+                      )}>
+                        {player.amount}
+                      </strong>
+                    </div>
+                  ))}
+                  <div className={h('hero-room-player', 'hero-room-add-player')}>
+                    <span className={h('hero-room-add-icon')} aria-hidden="true">+</span>
+                    <span className={h('hero-room-player-name')}>{addFriendLabel}</span>
+                  </div>
+                </div>
+
+                <div className={h('hero-room-tabs')} aria-label={content.preview.tableTitle}>
+                  <span className={h('is-active')}>{gameTabLabel}</span>
+                  <span>{historyTabLabel}</span>
+                </div>
+
+                <div className={h('hero-room-table')}>
+                  <div className={h('hero-room-table-head')}>
+                    <span className={h('hero-room-table-round')}>{roundHeading}</span>
+                    {content.preview.players.map((player, index) => (
+                      <span
+                        className={h('hero-room-table-player', index === 0 && 'is-current')}
+                        key={player.name}
+                      >
+                        <span className={h('hero-room-table-avatar')}>{player.emoji}</span>
+                        <span>{player.name}</span>
+                      </span>
+                    ))}
+                  </div>
+
+                  {content.preview.rounds.map((round, index) => (
+                    <div className={h('hero-room-table-row')} key={round.label} style={delayStyle(index + 2)}>
+                      <span className={h('hero-room-table-round')}>{round.label}</span>
+                      <span className={tableAmountClass(round.east, true)}>{round.east}</span>
+                      <span className={tableAmountClass(round.south)}>{round.south}</span>
+                      <span className={tableAmountClass(round.west)}>{round.west}</span>
+                      <span className={tableAmountClass(round.north)}>{round.north}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={h('hero-room-action-bar')}>
                   <span>{content.preview.round}</span>
-                  <span>E</span>
-                  <span>S</span>
-                  <span>W</span>
-                  <span>N</span>
+                  <strong>{nextRoundLabel}</strong>
                 </div>
-                {content.preview.rounds.map((round, index) => (
-                  <div className={h('hero-score-row')} key={round.label} style={delayStyle(index + 2)}>
-                    <span>{round.label}</span>
-                    <span>{round.east}</span>
-                    <span>{round.south}</span>
-                    <span>{round.west}</span>
-                    <span>{round.north}</span>
-                  </div>
-                ))}
               </div>
-
-              <div className={h('hero-settlement')}>
-                <div>
-                  <span>{content.preview.settlementTitle}</span>
-                  <strong>{content.preview.transfer}</strong>
-                </div>
-                <p>{content.preview.settlementHint}</p>
-              </div>
-            </div>
-
-            <div className={h('hero-metrics')} aria-label={content.featuresTitle}>
-              {content.metrics.map((metric) => (
-                <div key={metric.label}>
-                  <strong>{metric.value}</strong>
-                  <span>{metric.label}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

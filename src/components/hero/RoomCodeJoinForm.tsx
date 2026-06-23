@@ -34,7 +34,7 @@ export function RoomCodeJoinForm({
   return (
     <form className="mt-6 w-[min(100%,520px)] max-[620px]:mt-3" onSubmit={handleSubmit}>
       <label
-        className="mb-2 block text-[13px] font-extrabold text-[rgba(255,248,234,0.74)]"
+        className="mb-2 block text-[13px] font-extrabold text-[rgba(236,253,245,0.74)]"
         htmlFor="hero-room-code"
       >
         {label}
@@ -53,12 +53,12 @@ export function RoomCodeJoinForm({
             setError('')
           }}
           placeholder={placeholder}
-          className="h-12 w-[132px] rounded-lg border border-[rgba(255,248,234,0.26)] bg-[rgba(255,248,234,0.1)] text-center font-mono text-xl font-black leading-none text-[#fffdf6] outline-0 placeholder:text-[rgba(255,248,234,0.34)] focus:border-[#f5b840] max-[620px]:w-28 max-[620px]:basis-28"
+          className="h-12 w-[132px] rounded-lg border border-[rgba(236,253,245,0.26)] bg-[rgba(236,253,245,0.1)] text-center font-mono text-xl font-black leading-none text-[#f8fffb] outline-0 placeholder:text-[rgba(236,253,245,0.34)] focus:border-[#10b981] max-[620px]:w-28 max-[620px]:basis-28"
           aria-describedby={error ? 'hero-room-code-error' : undefined}
         />
         <button
           type="submit"
-          className="min-h-12 rounded-lg border border-[rgba(255,248,234,0.22)] bg-[#fff8ea] px-4 font-black text-[#173b30] motion-safe:transition-transform motion-safe:hover:-translate-y-px max-[620px]:min-w-0 max-[620px]:flex-auto"
+          className="min-h-12 rounded-lg border border-[rgba(236,253,245,0.22)] bg-[#ecfdf5] px-4 font-black text-[#047857] motion-safe:transition-transform motion-safe:hover:-translate-y-px max-[620px]:min-w-0 max-[620px]:flex-auto"
         >
           {buttonLabel}
         </button>

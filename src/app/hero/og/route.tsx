@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
           display: 'flex',
           position: 'relative',
           overflow: 'hidden',
-          background: '#10382d',
-          color: '#fff8ea',
+          background: '#064e3b',
+          color: '#ecfdf5',
           fontFamily: 'Arial, sans-serif',
         }}
       >
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
             inset: 0,
             display: 'flex',
             background:
-              'linear-gradient(120deg, rgba(245,184,64,0.22), transparent 34%), linear-gradient(140deg, #0a2a22 0%, #134437 52%, #332618 100%)',
+              'linear-gradient(120deg, rgba(16,185,129,0.32), transparent 34%), linear-gradient(140deg, #064e3b 0%, #059669 52%, #022c22 100%)',
           }}
         />
         <div
@@ -61,10 +61,10 @@ export async function GET(request: NextRequest) {
               style={{
                 display: 'flex',
                 padding: '12px 18px',
-                border: '1px solid rgba(245,184,64,0.55)',
+                border: '1px solid rgba(16,185,129,0.55)',
                 borderRadius: '8px',
-                background: 'rgba(245,184,64,0.16)',
-                color: '#ffd27a',
+                background: 'rgba(16,185,129,0.18)',
+                color: '#d1fae5',
                 fontSize: '24px',
                 fontWeight: 800,
               }}
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
               style={{
                 display: 'flex',
                 marginTop: '26px',
-                color: 'rgba(255,248,234,0.78)',
+                color: 'rgba(236,253,245,0.8)',
                 fontSize: '30px',
                 lineHeight: 1.36,
               }}
@@ -101,9 +101,9 @@ export async function GET(request: NextRequest) {
                   style={{
                     display: 'flex',
                     padding: '10px 14px',
-                    border: '1px solid rgba(255,248,234,0.18)',
+                    border: '1px solid rgba(236,253,245,0.18)',
                     borderRadius: '8px',
-                    background: 'rgba(255,248,234,0.1)',
+                    background: 'rgba(236,253,245,0.1)',
                     fontSize: '20px',
                     fontWeight: 800,
                   }}
@@ -120,9 +120,9 @@ export async function GET(request: NextRequest) {
               flexDirection: 'column',
               width: '390px',
               padding: '24px',
-              border: '1px solid rgba(255,248,234,0.28)',
+              border: '1px solid rgba(236,253,245,0.28)',
               borderRadius: '26px',
-              background: '#10241f',
+              background: '#022c22',
               boxShadow: '0 42px 90px rgba(0,0,0,0.34)',
             }}
           >
@@ -135,10 +135,10 @@ export async function GET(request: NextRequest) {
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ color: 'rgba(255,248,234,0.58)', fontSize: '18px' }}>
+                <div style={{ color: 'rgba(236,253,245,0.62)', fontSize: '18px' }}>
                   {content.preview.roomCodeLabel}
                 </div>
-                <div style={{ color: '#fffdf6', fontSize: '44px', fontWeight: 900 }}>
+                <div style={{ color: '#f8fffb', fontSize: '44px', fontWeight: 900 }}>
                   {content.preview.roomCode}
                 </div>
               </div>
@@ -165,13 +165,13 @@ export async function GET(request: NextRequest) {
                 alignItems: 'center',
                 padding: '16px',
                 borderRadius: '8px',
-                background: '#fff8ea',
-                color: '#173b30',
+                background: '#ecfdf5',
+                color: '#064e3b',
                 fontSize: '22px',
                 fontWeight: 900,
               }}
             >
-              <span style={{ color: '#b45309' }}>{content.preview.round}</span>
+              <span style={{ color: '#047857' }}>{content.preview.round}</span>
               <span>{content.preview.tableTitle}</span>
             </div>
 
@@ -184,9 +184,9 @@ export async function GET(request: NextRequest) {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '12px 14px',
-                    border: '1px solid rgba(255,248,234,0.12)',
+                    border: '1px solid rgba(236,253,245,0.12)',
                     borderRadius: '8px',
-                    background: 'rgba(255,248,234,0.08)',
+                    background: 'rgba(236,253,245,0.08)',
                     fontSize: '21px',
                     fontWeight: 800,
                   }}
