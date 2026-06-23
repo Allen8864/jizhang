@@ -1,12 +1,17 @@
 {
   "name": "Jizhang / Game Ledger",
   "short_name": "Jizhang",
-  "description": "Real-time bilingual score and settlement tracker for card and table games",
+  "description": "Free bilingual real-time score tracker and automatic settlement tool for mahjong, poker, board games, and game nights.",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
+  "lang": "zh-CN",
+  "dir": "ltr",
   "orientation": "portrait",
+  "categories": ["games", "utilities", "productivity"],
   "icons": [
     {
       "src": "/icons/icon.svg",

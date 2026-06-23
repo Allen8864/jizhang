@@ -1,5 +1,11 @@
 import type { Metadata } from 'next'
-import { getAbsoluteUrl, getSiteUrl } from './site'
+import {
+  SITE_BRAND,
+  getAbsoluteUrl,
+  getOgImageUrl,
+  getSiteUrl,
+} from './site'
+import { publicRobots } from './seo'
 
 export const HERO_LOCALES = ['en', 'zh'] as const
 
@@ -419,13 +425,13 @@ export function getHeroAlternates() {
   return {
     en: '/hero/en',
     'zh-CN': '/hero/zh',
-    'x-default': '/hero',
+    'x-default': '/hero/en',
   }
 }
 
 export function createHeroMetadata(locale: HeroLocale, canonicalPath: string): Metadata {
   const content = heroContent[locale]
-  const imageUrl = getAbsoluteUrl(`/hero/og?lang=${locale}`)
+  const imageUrl = getOgImageUrl(locale)
 
   return {
     metadataBase: new URL(getSiteUrl()),
@@ -436,21 +442,11 @@ export function createHeroMetadata(locale: HeroLocale, canonicalPath: string): M
       canonical: canonicalPath,
       languages: getHeroAlternates(),
     },
-    robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        'max-image-preview': 'large',
-        'max-snippet': -1,
-        'max-video-preview': -1,
-      },
-    },
+    robots: publicRobots,
     openGraph: {
       type: 'website',
       url: getAbsoluteUrl(canonicalPath),
-      siteName: 'Jizhang / Game Ledger',
+      siteName: SITE_BRAND,
       title: content.metaTitle,
       description: content.metaDescription,
       locale: locale === 'zh' ? 'zh_CN' : 'en_US',
@@ -476,9 +472,13 @@ export function createHeroMetadata(locale: HeroLocale, canonicalPath: string): M
 export function createHeroJsonLd(locale: HeroLocale, canonicalPath: string) {
   const content = heroContent[locale]
   const canonicalUrl = getAbsoluteUrl(canonicalPath)
+  const rootUrl = getAbsoluteUrl('/')
+  const imageUrl = getOgImageUrl(locale)
   const applicationId = `${canonicalUrl}#software`
   const faqId = `${canonicalUrl}#faq`
   const webPageId = `${canonicalUrl}#webpage`
+  const websiteId = `${rootUrl}#website`
+  const brandId = `${rootUrl}#brand`
 
   return {
     '@context': 'https://schema.org',
@@ -501,6 +501,20 @@ export function createHeroJsonLd(locale: HeroLocale, canonicalPath: string) {
         },
         featureList: content.features.map((feature) => feature.title),
         keywords: content.keywords.join(', '),
+        image: imageUrl,
+        screenshot: imageUrl,
+        browserRequirements:
+          'Requires a modern web browser with JavaScript enabled for room creation and live sync.',
+        audience: {
+          '@type': 'Audience',
+          audienceType:
+            locale === 'zh'
+              ? '麻将、扑克、桌游和朋友局玩家'
+              : 'Mahjong, poker, board game, and game night players',
+        },
+        brand: {
+          '@id': brandId,
+        },
       },
       {
         '@type': 'FAQPage',
@@ -522,6 +536,9 @@ export function createHeroJsonLd(locale: HeroLocale, canonicalPath: string) {
         name: content.metaTitle,
         description: content.metaDescription,
         inLanguage: content.schemaLanguage,
+        isPartOf: {
+          '@id': websiteId,
+        },
         about: {
           '@id': applicationId,
         },
@@ -533,6 +550,29 @@ export function createHeroJsonLd(locale: HeroLocale, canonicalPath: string) {
             '@id': faqId,
           },
         ],
+      },
+      {
+        '@type': 'WebSite',
+        '@id': websiteId,
+        url: rootUrl,
+        name: SITE_BRAND,
+        alternateName: ['打牌记账', 'Game Ledger', 'Jizhang'],
+        description:
+          'A bilingual web app for real-time game score tracking and automatic settlement.',
+        inLanguage: ['zh-CN', 'en-US'],
+        about: {
+          '@id': applicationId,
+        },
+        publisher: {
+          '@id': brandId,
+        },
+      },
+      {
+        '@type': 'Brand',
+        '@id': brandId,
+        name: SITE_BRAND,
+        alternateName: ['打牌记账', 'Game Ledger', 'Jizhang'],
+        url: rootUrl,
       },
     ],
   }

@@ -1,7 +1,13 @@
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { LanguageProvider } from "@/lib/i18n"
-import { getSiteUrl } from "@/lib/site"
+import {
+  SITE_BRAND,
+  SITE_DEFAULT_TITLE,
+  SITE_DESCRIPTION,
+  SITE_SHORT_NAME,
+  getSiteUrl,
+} from "@/lib/site"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -16,21 +22,34 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  title: "Jizhang / Game Ledger",
-  description: "Real-time bilingual score and settlement tracker for card and table games",
+  title: SITE_DEFAULT_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_BRAND,
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Jizhang",
+    title: SITE_SHORT_NAME,
   },
 }
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#ffffff",
 }
